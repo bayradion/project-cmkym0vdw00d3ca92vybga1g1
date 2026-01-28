@@ -16,7 +16,7 @@ import type { RootStackParamList, TabParamList } from './src/types';
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabNavigator() {
+const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -58,14 +58,24 @@ function TabNavigator() {
       />
     </Tab.Navigator>
   );
-}
+};
 
-export default function App() {
+const App: React.FC = () => {
   return (
     <PaperProvider theme={theme}>
       <NavigationContainer>
         <StatusBar style="auto" />
-        <Stack.Navigator>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: theme.colors.primary,
+            },
+            headerTintColor: theme.colors.onPrimary,
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        >
           <Stack.Screen
             name="Main"
             component={TabNavigator}
@@ -76,17 +86,12 @@ export default function App() {
             component={ChatScreen}
             options={({ route }) => ({
               title: route.params?.contactName || 'Chat',
-              headerStyle: {
-                backgroundColor: theme.colors.primary,
-              },
-              headerTintColor: theme.colors.onPrimary,
-              headerTitleStyle: {
-                fontWeight: 'bold',
-              },
             })}
           />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
   );
-}
+};
+
+export default App;

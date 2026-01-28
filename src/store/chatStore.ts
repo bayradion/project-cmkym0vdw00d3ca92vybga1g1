@@ -79,11 +79,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   getContactById: (id: string) => {
-    return get().contacts.find(contact => contact.id === id);
+    const state = get();
+    return state.contacts.find(contact => contact.id === id);
   },
 
   getChatByContactId: (contactId: string) => {
-    const messages = get().getMessagesByContactId(contactId);
+    const state = get();
+    const messages = state.getMessagesByContactId(contactId);
     const lastMessage = messages[messages.length - 1];
     
     return {
@@ -95,6 +97,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   getMessagesByContactId: (contactId: string) => {
-    return get().messages.filter(message => message.contactId === contactId);
+    const state = get();
+    return state.messages.filter(message => message.contactId === contactId);
   },
 }));

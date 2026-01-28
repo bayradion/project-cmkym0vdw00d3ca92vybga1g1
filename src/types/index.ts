@@ -1,9 +1,9 @@
 export interface Contact {
   id: string;
   name: string;
-  avatar?: string;
-  lastSeen?: string;
-  isOnline?: boolean;
+  avatar: string;
+  lastSeen: string;
+  isOnline: boolean;
 }
 
 export interface Message {
