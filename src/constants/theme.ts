@@ -1,29 +1,19 @@
-import { MD3LightTheme } from 'react-native-paper';
+import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
 
 export const theme = {
-  ...MD3LightTheme,
+  ...DefaultTheme,
   colors: {
-    ...MD3LightTheme.colors,
-    primary: '#075E54',
+    ...DefaultTheme.colors,
+    primary: '#25D366',
     onPrimary: '#FFFFFF',
-    primaryContainer: '#DCF7DC',
-    onPrimaryContainer: '#002114',
     secondary: '#128C7E',
     onSecondary: '#FFFFFF',
     surface: '#FFFFFF',
-    onSurface: '#1D1C16',
-    surfaceVariant: '#F0F2F1',
-    onSurfaceVariant: '#44483E',
-    outline: '#74796F',
-    background: '#F7F8FC',
-    onBackground: '#1D1C16',
-  },
-};
-
-export const chatTheme = {
-  colors: {
-    ownMessage: '#DCF8C6',
-    otherMessage: '#FFFFFF',
-    timestamp: '#999999',
+    onSurface: '#000000',
+    background: '#F7F8FA',
+    onBackground: '#000000',
+    outline: '#E0E0E0',
+    onSurfaceVariant: '#666666',
+    surfaceVariant: '#F5F5F5',
   },
 };

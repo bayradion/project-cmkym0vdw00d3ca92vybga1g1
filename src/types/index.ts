@@ -1,8 +1,9 @@
 export interface Contact {
   id: string;
   name: string;
+  avatar?: string;
+  lastSeen?: string;
   isOnline?: boolean;
-  lastSeen?: Date;
 }
 
 export interface Message {
@@ -10,7 +11,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   isOwn: boolean;
-  contactId?: string;
+  contactId: string;
 }
 
 export interface Chat {
@@ -18,13 +19,6 @@ export interface Chat {
   contactId: string;
   messages: Message[];
   lastMessage?: Message;
-  unreadCount: number;
-  createdAt: Date;
-}
-
-export interface User {
-  id: string;
-  name: string;
 }
 
 export type RootStackParamList = {

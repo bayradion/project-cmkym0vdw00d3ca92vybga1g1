@@ -1,87 +1,97 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Avatar, List, Divider } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Avatar, Card, List, Switch } from 'react-native-paper';
 import { theme } from '../constants/theme';
 
-export default function ProfileScreen() {
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    status: 'Hey there! I am using WhatsApp.',
-  };
+const ProfileScreen: React.FC = () => {
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
-      
-      <View style={styles.profileSection}>
-        <View style={styles.avatarContainer}>
-          <Avatar.Text 
-            size={100} 
-            label={user.name.split(' ').map(n => n[0]).join('')}
-            style={styles.avatar}
-          />
-        </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userStatus}>{user.status}</Text>
+        <Avatar.Text
+          size={80}
+          label="ME"
+          style={styles.avatar}
+        />
+        <Text style={styles.name}>My Profile</Text>
+        <Text style={styles.status}>Available</Text>
       </View>
 
-      <Card style={styles.infoCard}>
+      <Card style={styles.card}>
         <Card.Content>
-          <List.Item
-            title="Email"
-            description={user.email}
-            left={(props) => <List.Icon {...props} icon="email" />}
-            style={styles.listItem}
-          />
-          <Divider />
-          <List.Item
-            title="Phone"
-            description={user.phone}
-            left={(props) => <List.Icon {...props} icon="phone" />}
-            style={styles.listItem}
-          />
-          <Divider />
-          <List.Item
-            title="Status"
-            description={user.status}
-            left={(props) => <List.Icon {...props} icon="information" />}
-            style={styles.listItem}
-          />
+          <List.Section>
+            <List.Item
+              title="Phone"
+              description="+1 234 567 8900"
+              left={(props) => <List.Icon {...props} icon="phone" />}
+            />
+            <List.Item
+              title="Email"
+              description="me@example.com"
+              left={(props) => <List.Icon {...props} icon="email" />}
+            />
+          </List.Section>
         </Card.Content>
       </Card>
 
-      <Card style={styles.settingsCard}>
+      <Card style={styles.card}>
         <Card.Content>
-          <List.Item
-            title="Notifications"
-            left={(props) => <List.Icon {...props} icon="bell" />}
-            right={(props) => <MaterialIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />}
-            style={styles.listItem}
-          />
-          <Divider />
-          <List.Item
-            title="Privacy"
-            left={(props) => <List.Icon {...props} icon="shield" />}
-            right={(props) => <MaterialIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />}
-            style={styles.listItem}
-          />
-          <Divider />
-          <List.Item
-            title="Help"
-            left={(props) => <List.Icon {...props} icon="help-circle" />}
-            right={(props) => <MaterialIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />}
-            style={styles.listItem}
-          />
+          <List.Section>
+            <List.Item
+              title="Notifications"
+              description="Receive push notifications"
+              left={(props) => <List.Icon {...props} icon="bell" />}
+              right={() => (
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={setNotificationsEnabled}
+                />
+              )}
+            />
+            <List.Item
+              title="Dark Mode"
+              description="Use dark theme"
+              left={(props) => <List.Icon {...props} icon="theme-light-dark" />}
+              right={() => (
+                <Switch
+                  value={darkModeEnabled}
+                  onValueChange={setDarkModeEnabled}
+                />
+              )}
+            />
+          </List.Section>
+        </Card.Content>
+      </Card>
+
+      <Card style={styles.card}>
+        <Card.Content>
+          <List.Section>
+            <List.Item
+              title="Privacy"
+              description="Privacy settings"
+              left={(props) => <List.Icon {...props} icon="lock" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+            <List.Item
+              title="Help & Support"
+              description="Get help and support"
+              left={(props) => <List.Icon {...props} icon="help-circle" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+            <List.Item
+              title="About"
+              description="App information"
+              left={(props) => <List.Icon {...props} icon="information" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+          </List.Section>
         </Card.Content>
       </Card>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -89,51 +99,28 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.onPrimary,
-  },
-  profileSection: {
     alignItems: 'center',
-    paddingVertical: 32,
+    padding: 24,
     backgroundColor: theme.colors.surface,
-    marginBottom: 16,
-  },
-  avatarContainer: {
-    marginBottom: 16,
   },
   avatar: {
-    backgroundColor: theme.colors.primaryContainer,
+    backgroundColor: theme.colors.primary,
+    marginBottom: 16,
   },
-  userName: {
+  name: {
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.onSurface,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  userStatus: {
+  status: {
     fontSize: 16,
-    color: theme.colors.onSurfaceVariant,
-    textAlign: 'center',
-    paddingHorizontal: 32,
+    color: theme.colors.primary,
   },
-  infoCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: theme.colors.surface,
-  },
-  settingsCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: theme.colors.surface,
-  },
-  listItem: {
-    paddingVertical: 8,
+  card: {
+    margin: 16,
+    marginTop: 8,
   },
 });
+
+export default ProfileScreen;

@@ -1,20 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { Message } from '../types';
-import { theme, chatTheme } from '../constants/theme';
+import { theme } from '../constants/theme';
 
 interface MessageBubbleProps {
   message: Message;
-  contactName?: string;
 }
 
-export default function MessageBubble({ message, contactName }: MessageBubbleProps) {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -24,28 +19,29 @@ export default function MessageBubble({ message, contactName }: MessageBubblePro
     ]}>
       <View style={[
         styles.bubble,
-        {
-          backgroundColor: message.isOwn 
-            ? chatTheme.colors.ownMessage 
-            : chatTheme.colors.otherMessage
-        }
+        message.isOwn ? styles.ownBubble : styles.otherBubble
       ]}>
-        {!message.isOwn && contactName && (
-          <Text style={styles.contactName}>{contactName}</Text>
-        )}
-        <Text style={styles.messageText}>{message.text}</Text>
-        <Text style={styles.timestamp}>
+        <Text style={[
+          styles.text,
+          message.isOwn ? styles.ownText : styles.otherText
+        ]}>
+          {message.text}
+        </Text>
+        <Text style={[
+          styles.timestamp,
+          message.isOwn ? styles.ownTimestamp : styles.otherTimestamp
+        ]}>
           {formatTime(message.timestamp)}
         </Text>
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     marginVertical: 2,
-    marginHorizontal: 16,
+    paddingHorizontal: 16,
   },
   ownMessage: {
     alignItems: 'flex-end',
@@ -55,29 +51,38 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: '80%',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    padding: 12,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
-  contactName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.primary,
-    marginBottom: 2,
+  ownBubble: {
+    backgroundColor: theme.colors.primary,
+    borderBottomRightRadius: 4,
   },
-  messageText: {
+  otherBubble: {
+    backgroundColor: theme.colors.surfaceVariant,
+    borderBottomLeftRadius: 4,
+  },
+  text: {
     fontSize: 16,
-    color: theme.colors.onSurface,
     lineHeight: 20,
   },
+  ownText: {
+    color: theme.colors.onPrimary,
+  },
+  otherText: {
+    color: theme.colors.onSurface,
+  },
   timestamp: {
-    fontSize: 11,
-    color: chatTheme.colors.timestamp,
+    fontSize: 12,
     marginTop: 4,
     alignSelf: 'flex-end',
   },
+  ownTimestamp: {
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  otherTimestamp: {
+    color: theme.colors.onSurfaceVariant,
+  },
 });
+
+export default MessageBubble;
