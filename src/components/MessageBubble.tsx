@@ -1,72 +1,72 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import type { Message } from '../types';
+import React from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+} from 'react-native';
 import { theme } from '../constants/theme';
+import type { Message } from '../types';
 
 interface MessageBubbleProps {
   message: Message;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message }) => {
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+  const isOwn = message.isOwn;
 
   return (
-    <View style={[
-      styles.container,
-      message.isOwn ? styles.ownMessage : styles.otherMessage
-    ]}>
-      <View style={[
-        styles.bubble,
-        message.isOwn ? styles.ownBubble : styles.otherBubble
-      ]}>
-        <Text style={[
-          styles.text,
-          message.isOwn ? styles.ownText : styles.otherText
-        ]}>
+    <View style={[styles.container, isOwn ? styles.ownContainer : styles.otherContainer]}>
+      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble]}>
+        <Text style={[styles.messageText, isOwn ? styles.ownText : styles.otherText]}>
           {message.text}
         </Text>
-        <Text style={[
-          styles.timestamp,
-          message.isOwn ? styles.ownTimestamp : styles.otherTimestamp
-        ]}>
-          {formatTime(message.timestamp)}
+        <Text style={[styles.timestamp, isOwn ? styles.ownTimestamp : styles.otherTimestamp]}>
+          {message.timestamp.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </Text>
       </View>
     </View>
   );
-});
-
-MessageBubble.displayName = 'MessageBubble';
+};
 
 const styles = StyleSheet.create({
   container: {
     marginVertical: 2,
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
   },
-  ownMessage: {
+  ownContainer: {
     alignItems: 'flex-end',
   },
-  otherMessage: {
+  otherContainer: {
     alignItems: 'flex-start',
   },
   bubble: {
     maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   ownBubble: {
     backgroundColor: theme.colors.primary,
     borderBottomRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: theme.colors.surfaceVariant,
+    backgroundColor: theme.colors.surface,
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.outline,
   },
-  text: {
+  messageText: {
     fontSize: 16,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 4,
   },
   ownText: {
     color: theme.colors.onPrimary,
@@ -76,15 +76,13 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 12,
-    marginTop: 4,
     alignSelf: 'flex-end',
   },
   ownTimestamp: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: theme.colors.onPrimary,
+    opacity: 0.7,
   },
   otherTimestamp: {
     color: theme.colors.onSurfaceVariant,
   },
 });
-
-export default MessageBubble;

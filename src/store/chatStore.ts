@@ -65,67 +65,39 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   messages: mockMessages,
 
   addMessage: (contactId: string, text: string, isOwn: boolean) => {
-    if (!contactId || typeof text !== 'string' || text.trim() === '') {
-      console.warn('Invalid message parameters');
-      return;
-    }
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      timestamp: new Date(),
+      isOwn,
+      contactId,
+    };
 
-    try {
-      const newMessage: Message = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        text: text.trim(),
-        timestamp: new Date(),
-        isOwn: Boolean(isOwn),
-        contactId: contactId.toString(),
-      };
-
-      set((state) => ({
-        messages: [...state.messages, newMessage],
-      }));
-    } catch (error) {
-      console.warn('Error adding message:', error);
-    }
+    set((state) => ({
+      messages: [...state.messages, newMessage],
+    }));
   },
 
   getContactById: (id: string) => {
-    if (!id) return undefined;
-    
-    try {
-      return get().contacts.find(contact => contact?.id === id);
-    } catch (error) {
-      console.warn('Error getting contact by id:', error);
-      return undefined;
-    }
+    const state = get();
+    return state.contacts.find(contact => contact.id === id);
   },
 
   getChatByContactId: (contactId: string) => {
-    if (!contactId) return undefined;
+    const state = get();
+    const messages = state.messages.filter(message => message.contactId === contactId);
+    const lastMessage = messages[messages.length - 1];
     
-    try {
-      const messages = get().getMessagesByContactId(contactId);
-      const lastMessage = messages && messages.length > 0 ? messages[messages.length - 1] : undefined;
-      
-      return {
-        id: contactId,
-        contactId,
-        messages: messages || [],
-        lastMessage,
-      };
-    } catch (error) {
-      console.warn('Error getting chat by contact id:', error);
-      return undefined;
-    }
+    return {
+      id: contactId,
+      contactId,
+      messages,
+      lastMessage,
+    };
   },
 
   getMessagesByContactId: (contactId: string) => {
-    if (!contactId) return [];
-    
-    try {
-      const allMessages = get().messages || [];
-      return allMessages.filter(message => message?.contactId === contactId);
-    } catch (error) {
-      console.warn('Error getting messages by contact id:', error);
-      return [];
-    }
+    const state = get();
+    return state.messages.filter(message => message.contactId === contactId);
   },
 }));

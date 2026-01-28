@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, FlatList, StyleSheet, Text, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Text,
+  Pressable,
+} from 'react-native';
+import { Card, Avatar, Title, Caption } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useChatStore } from '../store/chatStore';
@@ -8,47 +15,68 @@ import type { RootStackParamList, Contact } from '../types';
 
 type ContactsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
+interface ContactItemProps {
+  contact: Contact;
+  onPress: () => void;
+}
+
+const ContactItem: React.FC<ContactItemProps> = ({ contact, onPress }) => {
+  return (
+    <View style={styles.cardWrapper}>
+      <Pressable onPress={onPress} style={styles.pressable}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.avatarContainer}>
+              <Avatar.Text 
+                size={50} 
+                label={contact.avatar} 
+                style={styles.avatar}
+              />
+              {contact.isOnline && <View style={styles.onlineIndicator} />}
+            </View>
+            <View style={styles.contentContainer}>
+              <Title style={styles.contactName}>{contact.name}</Title>
+              <Caption style={styles.lastSeen}>
+                {contact.isOnline ? 'Online' : `Last seen ${contact.lastSeen}`}
+              </Caption>
+            </View>
+          </Card.Content>
+        </Card>
+      </Pressable>
+    </View>
+  );
+};
+
 const ContactsScreen: React.FC = () => {
   const navigation = useNavigation<ContactsScreenNavigationProp>();
   const { contacts } = useChatStore();
 
-  const startChat = (contact: Contact) => {
+  const handleContactPress = (contact: Contact) => {
     navigation.navigate('Chat', {
       contactId: contact.id,
       contactName: contact.name,
     });
   };
 
-  const renderContactItem = ({ item }: { item: Contact }) => {
-    return (
-      <View style={styles.contactItemWrapper}>
-        <Pressable
-          style={styles.contactItem}
-          onPress={() => startChat(item)}
-        >
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatar}>{item.avatar}</Text>
-            {item.isOnline && <View style={styles.onlineIndicator} />}
-          </View>
-          
-          <View style={styles.contactInfo}>
-            <Text style={styles.contactName}>{item.name}</Text>
-            <Text style={styles.lastSeen}>
-              {item.isOnline ? 'Online' : `Last seen ${item.lastSeen}`}
-            </Text>
-          </View>
-        </Pressable>
-      </View>
-    );
-  };
+  const renderContactItem = ({ item }: { item: Contact }) => (
+    <ContactItem
+      contact={item}
+      onPress={() => handleContactPress(item)}
+    />
+  );
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Title style={styles.headerTitle}>Contacts</Title>
+        <Caption style={styles.contactCount}>{contacts.length} contacts</Caption>
+      </View>
+      
       <FlatList
         data={contacts}
-        renderItem={renderContactItem}
         keyExtractor={(item) => item.id}
-        style={styles.contactsList}
+        renderItem={renderContactItem}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -60,33 +88,52 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  contactsList: {
-    flex: 1,
-  },
-  contactItemWrapper: {
+  header: {
+    padding: 16,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.outline,
   },
-  contactItem: {
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.onSurface,
+    marginBottom: 4,
+  },
+  contactCount: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+  },
+  listContent: {
+    padding: 16,
+  },
+  cardWrapper: {
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  pressable: {
+    borderRadius: 12,
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 12,
+    marginRight: 16,
   },
   avatar: {
-    fontSize: 32,
-    width: 50,
-    height: 50,
-    textAlign: 'center',
-    lineHeight: 50,
     backgroundColor: theme.colors.primaryContainer,
-    borderRadius: 25,
-    overflow: 'hidden',
   },
   onlineIndicator: {
     position: 'absolute',
@@ -95,18 +142,18 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#4CAF50',
     borderWidth: 2,
     borderColor: theme.colors.surface,
   },
-  contactInfo: {
+  contentContainer: {
     flex: 1,
   },
   contactName: {
     fontSize: 16,
     fontWeight: '600',
     color: theme.colors.onSurface,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   lastSeen: {
     fontSize: 14,
