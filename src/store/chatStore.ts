@@ -1,32 +1,19 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Chat, Contact, Message, User } from '../types';
+import type { Chat, Contact, Message } from '../types';
 
-interface ChatState {
+interface ChatStore {
   chats: Chat[];
   contacts: Contact[];
-  user: User | null;
-  isLoading: boolean;
-  
-  // Actions
   loadData: () => Promise<void>;
-  saveData: () => Promise<void>;
-  
-  // Contact actions
-  addContact: (contact: Omit<Contact, 'id'>) => void;
-  
-  // Chat actions
-  createChat: (contactId: string) => string;
   getChat: (contactId: string) => Chat | undefined;
+  createChat: (contactId: string) => string;
   addMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
-  markChatAsRead: (chatId: string) => void;
-  
-  // User actions
-  setUser: (user: User) => void;
 }
 
-// Sample data
-const sampleContacts: Contact[] = [
+const generateId = () => Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+const mockContacts: Contact[] = [
   {
     id: '1',
     name: 'Alice Johnson',
@@ -41,210 +28,144 @@ const sampleContacts: Contact[] = [
   {
     id: '3',
     name: 'Charlie Brown',
+    isOnline: true,
+  },
+  {
+    id: '4',
+    name: 'Diana Prince',
     isOnline: false,
     lastSeen: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
   },
   {
-    id: '4',
-    name: 'Diana Wilson',
-    isOnline: true,
-  },
-  {
     id: '5',
-    name: 'Eva Martinez',
+    name: 'Eve Wilson',
     isOnline: false,
     lastSeen: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
   },
 ];
 
-const sampleChats: Chat[] = [
-  {
-    id: 'chat-1',
-    contactId: '1',
-    messages: [
-      {
-        id: 'msg-1',
-        text: 'Hey! How are you doing?',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60),
-        isOwn: false,
-        contactId: '1',
-      },
-      {
-        id: 'msg-2',
-        text: 'I\'m good, thanks! How about you?',
-        timestamp: new Date(Date.now() - 1000 * 60 * 50),
-        isOwn: true,
-      },
-      {
-        id: 'msg-3',
-        text: 'Great! Want to meet up for coffee later?',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30),
-        isOwn: false,
-        contactId: '1',
-      },
-    ],
-    lastMessage: {
-      id: 'msg-3',
-      text: 'Great! Want to meet up for coffee later?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      isOwn: false,
+const generateMockChats = (): Chat[] => {
+  const chats: Chat[] = [];
+  
+  // Create some initial chats
+  const chatData = [
+    {
       contactId: '1',
+      messages: [
+        { text: 'Hey! How are you?', isOwn: false, contactId: '1' },
+        { text: 'I\'m good, thanks! How about you?', isOwn: true },
+        { text: 'Great! Are we still on for tonight?', isOwn: false, contactId: '1' },
+      ],
     },
-    unreadCount: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-  },
-  {
-    id: 'chat-2',
-    contactId: '2',
-    messages: [
-      {
-        id: 'msg-4',
-        text: 'Don\'t forget about the meeting tomorrow',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120),
-        isOwn: false,
-        contactId: '2',
-      },
-      {
-        id: 'msg-5',
-        text: 'Thanks for the reminder!',
-        timestamp: new Date(Date.now() - 1000 * 60 * 100),
-        isOwn: true,
-      },
-    ],
-    lastMessage: {
-      id: 'msg-5',
-      text: 'Thanks for the reminder!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 100),
-      isOwn: true,
+    {
+      contactId: '2',
+      messages: [
+        { text: 'Did you see the game last night?', isOwn: false, contactId: '2' },
+        { text: 'Yes! What a match!', isOwn: true },
+      ],
     },
-    unreadCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
-  },
-];
+    {
+      contactId: '3',
+      messages: [
+        { text: 'Thanks for your help today', isOwn: true },
+        { text: 'No problem at all!', isOwn: false, contactId: '3' },
+      ],
+    },
+  ];
 
-export const useChatStore = create<ChatState>((set, get) => ({
+  chatData.forEach(({ contactId, messages }, index) => {
+    const chatId = `chat_${index + 1}`;
+    const chatMessages: Message[] = messages.map((msg, msgIndex) => ({
+      id: `${chatId}_msg_${msgIndex + 1}`,
+      text: msg.text,
+      timestamp: new Date(Date.now() - (messages.length - msgIndex) * 1000 * 60 * 10),
+      isOwn: msg.isOwn,
+      contactId: msg.contactId,
+    }));
+
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    
+    chats.push({
+      id: chatId,
+      contactId,
+      messages: chatMessages,
+      lastMessage,
+      unreadCount: lastMessage && !lastMessage.isOwn ? Math.floor(Math.random() * 3) + 1 : 0,
+      createdAt: new Date(Date.now() - (chatMessages.length * 1000 * 60 * 10)),
+    });
+  });
+
+  return chats.sort((a, b) => {
+    const aTime = a.lastMessage?.timestamp || a.createdAt;
+    const bTime = b.lastMessage?.timestamp || b.createdAt;
+    return bTime.getTime() - aTime.getTime();
+  });
+};
+
+export const useChatStore = create<ChatStore>((set, get) => ({
   chats: [],
   contacts: [],
-  user: null,
-  isLoading: false,
-
+  
   loadData: async () => {
-    set({ isLoading: true });
-    
     try {
-      const storedChats = await AsyncStorage.getItem('chats');
-      const storedContacts = await AsyncStorage.getItem('contacts');
-      const storedUser = await AsyncStorage.getItem('user');
-
-      if (storedChats && storedContacts) {
-        const parsedChats = JSON.parse(storedChats).map((chat: any) => ({
-          ...chat,
-          createdAt: new Date(chat.createdAt),
-          lastMessage: chat.lastMessage ? {
-            ...chat.lastMessage,
-            timestamp: new Date(chat.lastMessage.timestamp),
-          } : undefined,
-          messages: chat.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          })),
-        }));
-
-        const parsedContacts = JSON.parse(storedContacts).map((contact: any) => ({
-          ...contact,
-          lastSeen: contact.lastSeen ? new Date(contact.lastSeen) : undefined,
-        }));
-
-        set({
-          chats: parsedChats,
-          contacts: parsedContacts,
-          user: storedUser ? JSON.parse(storedUser) : null,
-        });
-      } else {
-        // Initialize with sample data
-        set({
-          contacts: sampleContacts,
-          chats: sampleChats,
-          user: { id: 'user-1', name: 'Me' },
-        });
-        
-        // Save sample data
-        await get().saveData();
-      }
+      // In a real app, this would load from AsyncStorage
+      // For demo purposes, we'll use mock data
+      set({
+        contacts: mockContacts,
+        chats: generateMockChats(),
+      });
     } catch (error) {
       console.error('Error loading data:', error);
-      // Fallback to sample data
+      // Fallback to mock data
       set({
-        contacts: sampleContacts,
-        chats: sampleChats,
-        user: { id: 'user-1', name: 'Me' },
+        contacts: mockContacts,
+        chats: generateMockChats(),
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
-  saveData: async () => {
-    const { chats, contacts, user } = get();
-    
-    try {
-      await AsyncStorage.setItem('chats', JSON.stringify(chats));
-      await AsyncStorage.setItem('contacts', JSON.stringify(contacts));
-      if (user) {
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-    }
-  },
-
-  addContact: (contactData) => {
-    const newContact: Contact = {
-      ...contactData,
-      id: Date.now().toString(),
-    };
-    
-    set(state => ({
-      contacts: [...state.contacts, newContact]
-    }));
-    
-    get().saveData();
-  },
-
-  createChat: (contactId) => {
+  getChat: (contactId: string) => {
     const { chats } = get();
-    const existingChat = chats.find(chat => chat.contactId === contactId);
+    return chats.find(chat => chat.contactId === contactId);
+  },
+
+  createChat: (contactId: string) => {
+    const { chats, contacts } = get();
     
+    // Check if chat already exists
+    const existingChat = chats.find(chat => chat.contactId === contactId);
     if (existingChat) {
       return existingChat.id;
     }
-    
+
+    // Check if contact exists
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) {
+      console.warn('Contact not found:', contactId);
+      return '';
+    }
+
+    const newChatId = generateId();
     const newChat: Chat = {
-      id: `chat-${Date.now()}`,
+      id: newChatId,
       contactId,
       messages: [],
       unreadCount: 0,
       createdAt: new Date(),
     };
-    
+
     set(state => ({
-      chats: [...state.chats, newChat]
+      chats: [newChat, ...state.chats],
     }));
-    
-    get().saveData();
-    return newChat.id;
+
+    return newChatId;
   },
 
-  getChat: (contactId) => {
-    const { chats } = get();
-    return chats.find(chat => chat.contactId === contactId);
-  },
-
-  addMessage: (chatId, messageData) => {
+  addMessage: (chatId: string, messageData: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
-      ...messageData,
-      id: `msg-${Date.now()}-${Math.random()}`,
+      id: generateId(),
       timestamp: new Date(),
+      ...messageData,
     };
 
     set(state => ({
@@ -255,30 +176,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ...chat,
             messages: updatedMessages,
             lastMessage: newMessage,
-            unreadCount: newMessage.isOwn ? chat.unreadCount : chat.unreadCount + 1,
+            unreadCount: newMessage.isOwn ? 0 : chat.unreadCount + 1,
           };
         }
         return chat;
-      })
+      }).sort((a, b) => {
+        const aTime = a.lastMessage?.timestamp || a.createdAt;
+        const bTime = b.lastMessage?.timestamp || b.createdAt;
+        return bTime.getTime() - aTime.getTime();
+      }),
     }));
-
-    get().saveData();
-  },
-
-  markChatAsRead: (chatId) => {
-    set(state => ({
-      chats: state.chats.map(chat =>
-        chat.id === chatId
-          ? { ...chat, unreadCount: 0 }
-          : chat
-      )
-    }));
-
-    get().saveData();
-  },
-
-  setUser: (user) => {
-    set({ user });
-    get().saveData();
   },
 }));

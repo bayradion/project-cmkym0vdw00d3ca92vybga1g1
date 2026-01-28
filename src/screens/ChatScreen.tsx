@@ -39,6 +39,7 @@ export default function ChatScreen() {
     if (!inputText.trim()) return;
 
     const chatId = chat?.id || createChat(contactId);
+    if (!chatId) return;
     
     addMessage(chatId, {
       text: inputText.trim(),
