@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { Message } from '../types';
 import { theme } from '../constants/theme';
@@ -8,30 +8,40 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const formatTime = (date: Date) => {
+  const formatTime = useMemo(() => (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
+
+  const formattedTime = useMemo(() => formatTime(message.timestamp), [formatTime, message.timestamp]);
+
+  const containerStyle = useMemo(() => [
+    styles.container,
+    message.isOwn ? styles.ownMessage : styles.otherMessage
+  ], [message.isOwn]);
+
+  const bubbleStyle = useMemo(() => [
+    styles.bubble,
+    message.isOwn ? styles.ownBubble : styles.otherBubble
+  ], [message.isOwn]);
+
+  const textStyle = useMemo(() => [
+    styles.text,
+    message.isOwn ? styles.ownText : styles.otherText
+  ], [message.isOwn]);
+
+  const timestampStyle = useMemo(() => [
+    styles.timestamp,
+    message.isOwn ? styles.ownTimestamp : styles.otherTimestamp
+  ], [message.isOwn]);
 
   return (
-    <View style={[
-      styles.container,
-      message.isOwn ? styles.ownMessage : styles.otherMessage
-    ]}>
-      <View style={[
-        styles.bubble,
-        message.isOwn ? styles.ownBubble : styles.otherBubble
-      ]}>
-        <Text style={[
-          styles.text,
-          message.isOwn ? styles.ownText : styles.otherText
-        ]}>
+    <View style={containerStyle}>
+      <View style={bubbleStyle}>
+        <Text style={textStyle}>
           {message.text}
         </Text>
-        <Text style={[
-          styles.timestamp,
-          message.isOwn ? styles.ownTimestamp : styles.otherTimestamp
-        ]}>
-          {formatTime(message.timestamp)}
+        <Text style={timestampStyle}>
+          {formattedTime}
         </Text>
       </View>
     </View>
@@ -85,4 +95,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MessageBubble;
+export default React.memo(MessageBubble);

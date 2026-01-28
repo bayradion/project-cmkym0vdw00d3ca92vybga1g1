@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, IconButton } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
@@ -14,17 +14,18 @@ const ChatScreen: React.FC = () => {
   const route = useRoute<ChatScreenRouteProp>();
   const { contactId } = route.params;
   const [inputText, setInputText] = useState('');
+  const flatListRef = useRef<FlatList<Message>>(null);
   
   const { getMessagesByContactId, addMessage } = useChatStore();
-  const messages = getMessagesByContactId(contactId);
+  const messages = useMemo(() => getMessagesByContactId(contactId), [contactId, getMessagesByContactId]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (inputText.trim()) {
       addMessage(contactId, inputText.trim(), true);
       setInputText('');
       
       // Simulate response after 1-2 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         const responses = [
           'Got it!',
           'Thanks for letting me know',
@@ -35,12 +36,36 @@ const ChatScreen: React.FC = () => {
         const randomResponse = responses[Math.floor(Math.random() * responses.length)];
         addMessage(contactId, randomResponse, false);
       }, 1000 + Math.random() * 1000);
-    }
-  };
 
-  const renderMessage = ({ item }: { item: Message }) => {
+      return () => clearTimeout(timeoutId);
+    }
+  }, [contactId, inputText, addMessage]);
+
+  const renderMessage = useCallback(({ item }: { item: Message }) => {
     return <MessageBubble message={item} />;
-  };
+  }, []);
+
+  const keyExtractor = useCallback((item: Message) => item.id, []);
+
+  const isDisabled = useMemo(() => !inputText.trim(), [inputText]);
+
+  const scrollToEnd = useCallback(() => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToEnd();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [scrollToEnd, messages.length]);
+
+  const inputContentStyle = useMemo(() => [styles.inputContent], []);
+  const sendButtonStyle = useMemo(() => [styles.sendButton], []);
+  const sendButtonWrapperStyle = useMemo(() => [styles.sendButtonWrapper], []);
 
   return (
     <KeyboardAvoidingView 
@@ -48,12 +73,18 @@ const ChatScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <FlatList
+        ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         style={styles.messagesList}
-        inverted={false}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={20}
+        windowSize={10}
+        initialNumToRender={15}
+        onContentSizeChange={scrollToEnd}
+        onLayout={scrollToEnd}
       />
       
       <View style={styles.inputContainer}>
@@ -67,16 +98,16 @@ const ChatScreen: React.FC = () => {
             mode="outlined"
             outlineColor="transparent"
             activeOutlineColor="transparent"
-            contentStyle={styles.inputContent}
+            contentStyle={inputContentStyle}
           />
-          <View style={styles.sendButtonWrapper}>
+          <View style={sendButtonWrapperStyle}>
             <IconButton
               icon="send"
               size={24}
               iconColor={theme.colors.onPrimary}
-              style={styles.sendButton}
+              style={sendButtonStyle}
               onPress={handleSend}
-              disabled={!inputText.trim()}
+              disabled={isDisabled}
             />
           </View>
         </View>
@@ -130,4 +161,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatScreen;
+export default React.memo(ChatScreen);

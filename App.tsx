@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -16,82 +16,91 @@ import type { RootStackParamList, TabParamList } from './src/types';
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const TabNavigator: React.FC = () => {
+const TabNavigator = React.memo(() => {
+  const chatTabOptions = useMemo(() => ({
+    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+      <MaterialIcons name="chat" size={size} color={color} />
+    ),
+  }), []);
+
+  const contactsTabOptions = useMemo(() => ({
+    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+      <MaterialIcons name="contacts" size={size} color={color} />
+    ),
+  }), []);
+
+  const profileTabOptions = useMemo(() => ({
+    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+      <MaterialIcons name="person" size={size} color={color} />
+    ),
+  }), []);
+
+  const screenOptions = useMemo(() => ({
+    headerShown: false,
+    tabBarActiveTintColor: theme.colors.primary,
+    tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+    tabBarStyle: {
+      backgroundColor: theme.colors.surface,
+      borderTopColor: theme.colors.outline,
+    },
+  }), []);
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outline,
-        },
-      }}
-    >
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
         name="Chats"
         component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="chat" size={size} color={color} />
-          ),
-        }}
+        options={chatTabOptions}
       />
       <Tab.Screen
         name="Contacts"
         component={ContactsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="contacts" size={size} color={color} />
-          ),
-        }}
+        options={contactsTabOptions}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="person" size={size} color={color} />
-          ),
-        }}
+        options={profileTabOptions}
       />
     </Tab.Navigator>
   );
-};
+});
 
-const App: React.FC = () => {
+TabNavigator.displayName = 'TabNavigator';
+
+export default function App() {
+  const stackScreenOptions = useCallback(({ route }: any) => ({
+    title: route.params?.contactName || 'Chat',
+    headerStyle: {
+      backgroundColor: theme.colors.primary,
+    },
+    headerTintColor: theme.colors.onPrimary,
+    headerTitleStyle: {
+      fontWeight: 'bold' as const,
+    },
+  }), []);
+
+  const mainScreenOptions = useMemo(() => ({
+    headerShown: false,
+  }), []);
+
   return (
     <PaperProvider theme={theme}>
       <NavigationContainer>
         <StatusBar style="auto" />
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: theme.colors.primary,
-            },
-            headerTintColor: theme.colors.onPrimary,
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        >
+        <Stack.Navigator>
           <Stack.Screen
             name="Main"
             component={TabNavigator}
-            options={{ headerShown: false }}
+            options={mainScreenOptions}
           />
           <Stack.Screen
             name="Chat"
             component={ChatScreen}
-            options={({ route }) => ({
-              title: route.params?.contactName || 'Chat',
-            })}
+            options={stackScreenOptions}
           />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
   );
-};
-
-export default App;
+}
