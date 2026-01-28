@@ -1,35 +1,20 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
-
-import { theme, spacing, borderRadius } from '../constants/theme';
+import { View, Text, StyleSheet } from 'react-native';
 import type { Message } from '../types';
+import { theme, chatTheme } from '../constants/theme';
 
 interface MessageBubbleProps {
   message: Message;
+  contactName?: string;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export default function MessageBubble({ message, contactName }: MessageBubbleProps) {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ru-RU', { 
+    return date.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: false
+      hour12: false 
     });
-  };
-
-  const getStatusIcon = () => {
-    switch (message.status) {
-      case 'sent':
-        return <MaterialIcons name="done" size={16} color="#999" />;
-      case 'delivered':
-        return <MaterialIcons name="done-all" size={16} color="#999" />;
-      case 'read':
-        return <MaterialIcons name="done-all" size={16} color={theme.colors.primary} />;
-      default:
-        return null;
-    }
   };
 
   return (
@@ -39,98 +24,60 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     ]}>
       <View style={[
         styles.bubble,
-        message.isOwn ? styles.ownBubble : styles.otherBubble
+        {
+          backgroundColor: message.isOwn 
+            ? chatTheme.colors.ownMessage 
+            : chatTheme.colors.otherMessage
+        }
       ]}>
-        <Text 
-          variant="bodyMedium" 
-          style={[
-            styles.messageText,
-            message.isOwn ? styles.ownText : styles.otherText
-          ]}
-        >
-          {message.text}
+        {!message.isOwn && contactName && (
+          <Text style={styles.contactName}>{contactName}</Text>
+        )}
+        <Text style={styles.messageText}>{message.text}</Text>
+        <Text style={styles.timestamp}>
+          {formatTime(message.timestamp)}
         </Text>
-        
-        <View style={styles.messageFooter}>
-          <Text 
-            variant="bodySmall" 
-            style={[
-              styles.timeText,
-              message.isOwn ? styles.ownTimeText : styles.otherTimeText
-            ]}
-          >
-            {formatTime(message.timestamp)}
-          </Text>
-          {message.isOwn && (
-            <View style={styles.statusIcon}>
-              {getStatusIcon()}
-            </View>
-          )}
-        </View>
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    maxWidth: '80%',
+    marginVertical: 2,
+    marginHorizontal: 16,
   },
   ownMessage: {
-    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
   },
   otherMessage: {
-    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
   },
   bubble: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    elevation: 1,
-    shadowColor: theme.colors.shadow,
+    maxWidth: '80%',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  ownBubble: {
-    backgroundColor: theme.colors.primaryContainer,
-    borderBottomRightRadius: borderRadius.sm,
-  },
-  otherBubble: {
-    backgroundColor: theme.colors.surface,
-    borderBottomLeftRadius: borderRadius.sm,
+  contactName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginBottom: 2,
   },
   messageText: {
+    fontSize: 16,
+    color: theme.colors.onSurface,
     lineHeight: 20,
-    marginBottom: spacing.xs,
   },
-  ownText: {
-    color: theme.colors.onPrimaryContainer,
-  },
-  otherText: {
-    color: theme.colors.onSurface,
-  },
-  messageFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: spacing.xs,
-  },
-  timeText: {
+  timestamp: {
     fontSize: 11,
-    opacity: 0.7,
-  },
-  ownTimeText: {
-    color: theme.colors.onPrimaryContainer,
-  },
-  otherTimeText: {
-    color: theme.colors.onSurface,
-  },
-  statusIcon: {
-    marginLeft: spacing.xs,
+    color: chatTheme.colors.timestamp,
+    marginTop: 4,
+    alignSelf: 'flex-end',
   },
 });
-
-export default MessageBubble;

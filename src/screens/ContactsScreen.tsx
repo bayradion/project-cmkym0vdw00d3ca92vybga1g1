@@ -1,104 +1,110 @@
-import React from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
-import { Appbar, List, Avatar, Text, Divider } from 'react-native-paper';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { Text, Card, Avatar, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-
 import { useChatStore } from '../store/chatStore';
-import { theme, spacing } from '../constants/theme';
+import { theme } from '../constants/theme';
 import type { RootStackParamList, Contact } from '../types';
 
 type ContactsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
-const ContactsScreen = () => {
+export default function ContactsScreen() {
   const navigation = useNavigation<ContactsScreenNavigationProp>();
-  const { contacts } = useChatStore();
+  const { contacts, createChat, loadData } = useChatStore();
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const formatLastSeen = (lastSeen?: Date, isOnline?: boolean) => {
+    if (isOnline) return 'Online';
+    if (!lastSeen) return 'Last seen unknown';
+    
+    const now = new Date();
+    const diff = now.getTime() - lastSeen.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days === 1) return 'Yesterday';
+    return `${days}d ago`;
+  };
 
   const handleContactPress = (contact: Contact) => {
+    createChat(contact.id);
     navigation.navigate('Chat', {
       contactId: contact.id,
       contactName: contact.name,
     });
   };
 
-  const formatLastSeen = (date: Date | undefined, isOnline: boolean) => {
-    if (isOnline) return 'В сети';
-    if (!date) return 'Давно';
-    
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    
-    if (hours < 1) {
-      return 'Недавно';
-    }
-    if (hours < 24) {
-      return `${hours} ч. назад`;
-    }
-    const days = Math.floor(hours / 24);
-    return `${days} дн. назад`;
+  const renderContactItem = ({ item }: { item: Contact }) => {
+    return (
+      <View style={styles.cardContainer}>
+        <Card 
+          style={styles.contactCard} 
+          onPress={() => handleContactPress(item)}
+        >
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.avatarContainer}>
+              <Avatar.Text 
+                size={50} 
+                label={item.name.split(' ').map(n => n[0]).join('')}
+                style={styles.avatar}
+              />
+              {item.isOnline && (
+                <View style={styles.onlineIndicator} />
+              )}
+            </View>
+            
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.lastSeen}>
+                {formatLastSeen(item.lastSeen, item.isOnline)}
+              </Text>
+            </View>
+            
+            <View style={styles.actionButtonWrapper}>
+              <IconButton
+                icon="chat"
+                size={24}
+                iconColor={theme.colors.primary}
+                style={styles.chatButton}
+                onPress={() => handleContactPress(item)}
+              />
+            </View>
+          </Card.Content>
+        </Card>
+      </View>
+    );
   };
-
-  const renderContact = ({ item }: { item: Contact }) => (
-    <List.Item
-      title={item.name}
-      description={formatLastSeen(item.lastSeen, item.isOnline)}
-      onPress={() => handleContactPress(item)}
-      left={() => (
-        <View style={styles.avatarContainer}>
-          <Avatar.Text
-            size={48}
-            label={item.name.split(' ').map(n => n[0]).join('')}
-            style={styles.avatar}
-          />
-          {item.isOnline && <View style={styles.onlineIndicator} />}
-        </View>
-      )}
-      right={() => (
-        <List.Icon icon="chat" color={theme.colors.primary} />
-      )}
-      style={styles.listItem}
-    />
-  );
 
   return (
     <View style={styles.container}>
-      <Appbar.Header style={styles.header}>
-        <Appbar.Content title="Контакты" titleStyle={styles.headerTitle} />
-        <Appbar.Action icon="account-plus" onPress={() => {}} />
-      </Appbar.Header>
-
-      <View style={styles.content}>
-        <List.Item
-          title="Новая группа"
-          left={() => (
-            <Avatar.Icon
-              size={48}
-              icon="account-group"
-              style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
-            />
-          )}
-          style={styles.listItem}
-          onPress={() => {}}
-        />
-        
-        <Divider style={styles.divider} />
-        
-        <Text variant="titleSmall" style={styles.sectionTitle}>
-          Все контакты ({contacts.length})
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Contacts</Text>
+        <Text style={styles.contactCount}>
+          {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
         </Text>
-        
-        <FlatList
-          data={contacts.sort((a, b) => a.name.localeCompare(b.name))}
-          keyExtractor={(item) => item.id}
-          renderItem={renderContact}
-          style={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
       </View>
+      
+      <FlatList
+        data={contacts}
+        renderItem={renderContactItem}
+        keyExtractor={(item) => item.id}
+        style={styles.contactsList}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -107,27 +113,45 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: theme.colors.primary,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
-    color: theme.colors.onPrimary,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: theme.colors.onPrimary,
   },
-  content: {
+  contactCount: {
+    fontSize: 14,
+    color: theme.colors.onPrimary,
+    opacity: 0.8,
+    marginTop: 4,
+  },
+  contactsList: {
     flex: 1,
   },
-  list: {
-    flex: 1,
+  listContent: {
+    paddingVertical: 8,
   },
-  listItem: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  cardContainer: {
+    marginHorizontal: 16,
+    marginVertical: 4,
+  },
+  contactCard: {
+    backgroundColor: theme.colors.surface,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: spacing.sm,
+    marginRight: 16,
   },
   avatar: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryContainer,
   },
   onlineIndicator: {
     position: 'absolute',
@@ -136,19 +160,29 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.primary,
     borderWidth: 2,
     borderColor: theme.colors.surface,
   },
-  divider: {
-    marginVertical: spacing.sm,
+  contactInfo: {
+    flex: 1,
   },
-  sectionTitle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: theme.colors.onSurfaceVariant,
+  contactName: {
+    fontSize: 16,
     fontWeight: '600',
+    color: theme.colors.onSurface,
+    marginBottom: 4,
+  },
+  lastSeen: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+  },
+  actionButtonWrapper: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  chatButton: {
+    margin: 0,
+    backgroundColor: theme.colors.primaryContainer,
   },
 });
-
-export default ContactsScreen;

@@ -3,8 +3,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   isOwn: boolean;
-  contactId: string;
-  status: 'sent' | 'delivered' | 'read';
+  contactId?: string;
 }
 
 export interface Contact {
@@ -12,17 +11,15 @@ export interface Contact {
   name: string;
   avatar?: string;
   lastSeen?: Date;
-  isOnline: boolean;
-  lastMessage?: string;
-  lastMessageTime?: Date;
-  unreadCount: number;
+  isOnline?: boolean;
 }
 
 export interface Chat {
   id: string;
   contactId: string;
   messages: Message[];
-  lastActivity: Date;
+  lastMessage?: Message;
+  unreadCount: number;
 }
 
 export type RootStackParamList = {
@@ -38,18 +35,3 @@ export type TabParamList = {
   Contacts: undefined;
   Profile: undefined;
 };
-
-export interface ChatStore {
-  contacts: Contact[];
-  chats: Chat[];
-  currentUser: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  addMessage: (contactId: string, text: string) => void;
-  markAsRead: (contactId: string) => void;
-  updateContact: (contactId: string, updates: Partial<Contact>) => void;
-  getChat: (contactId: string) => Chat | undefined;
-  getChatMessages: (contactId: string) => Message[];
-}

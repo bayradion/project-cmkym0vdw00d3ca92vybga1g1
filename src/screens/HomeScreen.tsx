@@ -1,94 +1,132 @@
-import React from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
-import { Appbar, List, Avatar, Badge, Text } from 'react-native-paper';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { Text, Card, Avatar, Badge } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-
 import { useChatStore } from '../store/chatStore';
-import { theme, spacing } from '../constants/theme';
-import type { RootStackParamList, Contact } from '../types';
+import { theme } from '../constants/theme';
+import type { RootStackParamList, Chat } from '../types';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
-const HomeScreen = () => {
+export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { contacts, markAsRead } = useChatStore();
+  const { chats, contacts, loadData } = useChatStore();
 
-  const handleChatPress = (contact: Contact) => {
-    markAsRead(contact.id);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+      return date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    } else if (days === 1) {
+      return 'Yesterday';
+    } else if (days < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+    }
+  };
+
+  const getContactName = (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId);
+    return contact?.name || 'Unknown Contact';
+  };
+
+  const handleChatPress = (chat: Chat) => {
+    const contactName = getContactName(chat.contactId);
     navigation.navigate('Chat', {
-      contactId: contact.id,
-      contactName: contact.name,
+      contactId: chat.contactId,
+      contactName,
     });
   };
 
-  const formatTime = (date: Date | undefined) => {
-    if (!date) return '';
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    
-    if (hours < 1) {
-      const minutes = Math.floor(diff / (1000 * 60));
-      return `${minutes}м`;
-    }
-    if (hours < 24) {
-      return `${hours}ч`;
-    }
-    return date.toLocaleDateString();
-  };
+  const renderChatItem = ({ item }: { item: Chat }) => {
+    const contactName = getContactName(item.contactId);
+    const contact = contacts.find(c => c.id === item.contactId);
+    const lastMessage = item.lastMessage;
 
-  const renderChatItem = ({ item }: { item: Contact }) => (
-    <List.Item
-      title={item.name}
-      description={item.lastMessage || 'Нет сообщений'}
-      onPress={() => handleChatPress(item)}
-      left={() => (
-        <View style={styles.avatarContainer}>
-          <Avatar.Text
-            size={48}
-            label={item.name.split(' ').map(n => n[0]).join('')}
-            style={styles.avatar}
-          />
-          {item.isOnline && <View style={styles.onlineIndicator} />}
-        </View>
-      )}
-      right={() => (
-        <View style={styles.rightContainer}>
-          <Text variant="bodySmall" style={styles.timeText}>
-            {formatTime(item.lastMessageTime)}
-          </Text>
-          {item.unreadCount > 0 && (
-            <Badge style={styles.badge}>{item.unreadCount}</Badge>
-          )}
-        </View>
-      )}
-      style={styles.listItem}
-    />
-  );
+    return (
+      <View style={styles.cardContainer}>
+        <Card 
+          style={styles.chatCard} 
+          onPress={() => handleChatPress(item)}
+        >
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.avatarContainer}>
+              <Avatar.Text 
+                size={50} 
+                label={contactName.split(' ').map(n => n[0]).join('')}
+                style={styles.avatar}
+              />
+              {contact?.isOnline && (
+                <View style={styles.onlineIndicator} />
+              )}
+            </View>
+            
+            <View style={styles.chatInfo}>
+              <View style={styles.chatHeader}>
+                <Text style={styles.contactName} numberOfLines={1}>
+                  {contactName}
+                </Text>
+                {lastMessage && (
+                  <Text style={styles.timestamp}>
+                    {formatTime(lastMessage.timestamp)}
+                  </Text>
+                )}
+              </View>
+              
+              <View style={styles.messagePreview}>
+                {lastMessage ? (
+                  <Text style={styles.lastMessage} numberOfLines={1}>
+                    {lastMessage.isOwn ? 'You: ' : ''}{lastMessage.text}
+                  </Text>
+                ) : (
+                  <Text style={styles.noMessages}>No messages yet</Text>
+                )}
+                
+                {item.unreadCount > 0 && (
+                  <Badge style={styles.unreadBadge}>
+                    {item.unreadCount}
+                  </Badge>
+                )}
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Appbar.Header style={styles.header}>
-        <Appbar.Content title="WhatsApp" titleStyle={styles.headerTitle} />
-        <Appbar.Action icon="magnify" onPress={() => {}} />
-        <Appbar.Action icon="dots-vertical" onPress={() => {}} />
-      </Appbar.Header>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Chats</Text>
+      </View>
       
       <FlatList
-        data={contacts.sort((a, b) => {
-          const timeA = a.lastMessageTime?.getTime() || 0;
-          const timeB = b.lastMessageTime?.getTime() || 0;
-          return timeB - timeA;
-        })}
-        keyExtractor={(item) => item.id}
+        data={chats}
         renderItem={renderChatItem}
-        style={styles.list}
+        keyExtractor={(item) => item.id}
+        style={styles.chatList}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -97,26 +135,39 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: theme.colors.primary,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
-    color: theme.colors.onPrimary,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: theme.colors.onPrimary,
   },
-  list: {
+  chatList: {
     flex: 1,
   },
-  listItem: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.outline,
+  listContent: {
+    paddingVertical: 8,
+  },
+  cardContainer: {
+    marginHorizontal: 16,
+    marginVertical: 4,
+  },
+  chatCard: {
+    backgroundColor: theme.colors.surface,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: spacing.sm,
+    marginRight: 16,
   },
   avatar: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryContainer,
   },
   onlineIndicator: {
     position: 'absolute',
@@ -125,22 +176,48 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.primary,
     borderWidth: 2,
     borderColor: theme.colors.surface,
   },
-  rightContainer: {
-    alignItems: 'flex-end',
+  chatInfo: {
+    flex: 1,
+  },
+  chatHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 48,
-    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  timeText: {
+  contactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.onSurface,
+    flex: 1,
+  },
+  timestamp: {
+    fontSize: 12,
     color: theme.colors.onSurfaceVariant,
+    marginLeft: 8,
   },
-  badge: {
+  messagePreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lastMessage: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    flex: 1,
+  },
+  noMessages: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  unreadBadge: {
     backgroundColor: theme.colors.primary,
+    marginLeft: 8,
   },
 });
-
-export default HomeScreen;

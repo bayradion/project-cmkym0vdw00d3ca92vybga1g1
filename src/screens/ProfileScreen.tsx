@@ -1,185 +1,171 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Appbar, Avatar, Text, List, Divider, Switch } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
-
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Card, Avatar, List, Divider, Switch, Button } from 'react-native-paper';
 import { useChatStore } from '../store/chatStore';
-import { theme, spacing } from '../constants/theme';
+import { theme } from '../constants/theme';
 
-const ProfileScreen = () => {
-  const { currentUser } = useChatStore();
+export default function ProfileScreen() {
+  const { currentUser, chats, contacts } = useChatStore();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkMode, setDarkMode] = React.useState(false);
+  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
+
+  const totalMessages = chats.reduce((total, chat) => total + chat.messages.length, 0);
+  const totalChats = chats.length;
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header style={styles.header}>
-        <Appbar.Content title="Профиль" titleStyle={styles.headerTitle} />
-        <Appbar.Action icon="pencil" onPress={() => {}} />
-      </Appbar.Header>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Profile</Text>
+      </View>
+      
+      <View style={styles.content}>
+        {/* Profile Card */}
+        <Card style={styles.profileCard}>
+          <Card.Content style={styles.profileContent}>
+            <Avatar.Text 
+              size={80} 
+              label={currentUser?.name?.split(' ').map(n => n[0]).join('') || 'ME'}
+              style={styles.profileAvatar}
+            />
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>
+                {currentUser?.name || 'My Profile'}
+              </Text>
+              <Text style={styles.profileStatus}>Online</Text>
+            </View>
+          </Card.Content>
+        </Card>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.profileSection}>
-          <Avatar.Text
-            size={80}
-            label={currentUser.name}
-            style={styles.profileAvatar}
-          />
-          <Text variant="headlineSmall" style={styles.profileName}>
-            {currentUser.name}
-          </Text>
-          <Text variant="bodyMedium" style={styles.profileStatus}>
-            В сети
+        {/* Statistics Card */}
+        <Card style={styles.statsCard}>
+          <Card.Content>
+            <Text style={styles.sectionTitle}>Statistics</Text>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{totalChats}</Text>
+                <Text style={styles.statLabel}>Chats</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{totalMessages}</Text>
+                <Text style={styles.statLabel}>Messages</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{contacts.length}</Text>
+                <Text style={styles.statLabel}>Contacts</Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Settings Card */}
+        <Card style={styles.settingsCard}>
+          <Card.Content>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            
+            <List.Item
+              title="Notifications"
+              description="Enable push notifications"
+              left={(props) => <List.Icon {...props} icon="bell" />}
+              right={() => (
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={setNotificationsEnabled}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={styles.listItem}
+            />
+            
+            <Divider style={styles.divider} />
+            
+            <List.Item
+              title="Dark Mode"
+              description="Use dark theme"
+              left={(props) => <List.Icon {...props} icon="theme-light-dark" />}
+              right={() => (
+                <Switch
+                  value={darkModeEnabled}
+                  onValueChange={setDarkModeEnabled}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={styles.listItem}
+            />
+            
+            <Divider style={styles.divider} />
+            
+            <List.Item
+              title="Privacy"
+              description="Manage your privacy settings"
+              left={(props) => <List.Icon {...props} icon="shield-account" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+              style={styles.listItem}
+              onPress={() => {
+                // Handle privacy settings
+                console.log('Privacy settings pressed');
+              }}
+            />
+            
+            <Divider style={styles.divider} />
+            
+            <List.Item
+              title="Storage"
+              description="Manage chat storage"
+              left={(props) => <List.Icon {...props} icon="database" />}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+              style={styles.listItem}
+              onPress={() => {
+                // Handle storage settings
+                console.log('Storage settings pressed');
+              }}
+            />
+          </Card.Content>
+        </Card>
+
+        {/* Actions Card */}
+        <Card style={styles.actionsCard}>
+          <Card.Content>
+            <Text style={styles.sectionTitle}>Account</Text>
+            
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="outlined"
+                icon="account-edit"
+                style={styles.actionButton}
+                contentStyle={styles.buttonContent}
+                onPress={() => {
+                  console.log('Edit profile pressed');
+                }}
+              >
+                Edit Profile
+              </Button>
+              
+              <Button
+                mode="outlined"
+                icon="backup-restore"
+                style={styles.actionButton}
+                contentStyle={styles.buttonContent}
+                onPress={() => {
+                  console.log('Backup & Restore pressed');
+                }}
+              >
+                Backup & Restore
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* App Info */}
+        <View style={styles.appInfo}>
+          <Text style={styles.appVersion}>WhatsApp Chat App v1.0.0</Text>
+          <Text style={styles.appDescription}>
+            Built with React Native & Expo
           </Text>
         </View>
-
-        <Divider style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Настройки
-          </Text>
-          
-          <List.Item
-            title="Уведомления"
-            description="Получать уведомления о новых сообщениях"
-            left={() => (
-              <MaterialIcons 
-                name="notifications" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-              />
-            )}
-            style={styles.listItem}
-          />
-
-          <List.Item
-            title="Темная тема"
-            description="Использовать темное оформление"
-            left={() => (
-              <MaterialIcons 
-                name="dark-mode" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-              />
-            )}
-            style={styles.listItem}
-          />
-
-          <List.Item
-            title="Приватность"
-            description="Настройки конфиденциальности"
-            left={() => (
-              <MaterialIcons 
-                name="privacy-tip" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <MaterialIcons 
-                name="chevron-right" 
-                size={24} 
-                color={theme.colors.onSurfaceVariant}
-              />
-            )}
-            style={styles.listItem}
-            onPress={() => {}}
-          />
-
-          <List.Item
-            title="Хранилище"
-            description="Управление данными и хранилищем"
-            left={() => (
-              <MaterialIcons 
-                name="storage" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <MaterialIcons 
-                name="chevron-right" 
-                size={24} 
-                color={theme.colors.onSurfaceVariant}
-              />
-            )}
-            style={styles.listItem}
-            onPress={() => {}}
-          />
-        </View>
-
-        <Divider style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Поддержка
-          </Text>
-
-          <List.Item
-            title="Помощь"
-            description="Часто задаваемые вопросы"
-            left={() => (
-              <MaterialIcons 
-                name="help" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <MaterialIcons 
-                name="chevron-right" 
-                size={24} 
-                color={theme.colors.onSurfaceVariant}
-              />
-            )}
-            style={styles.listItem}
-            onPress={() => {}}
-          />
-
-          <List.Item
-            title="О приложении"
-            description="Версия 1.0.0"
-            left={() => (
-              <MaterialIcons 
-                name="info" 
-                size={24} 
-                color={theme.colors.primary}
-                style={styles.listIcon}
-              />
-            )}
-            right={() => (
-              <MaterialIcons 
-                name="chevron-right" 
-                size={24} 
-                color={theme.colors.onSurfaceVariant}
-              />
-            )}
-            style={styles.listItem}
-            onPress={() => {}}
-          />
-        </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -188,51 +174,107 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: theme.colors.primary,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
-    color: theme.colors.onPrimary,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: theme.colors.onPrimary,
   },
   content: {
-    flex: 1,
+    padding: 16,
   },
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
+  profileCard: {
     backgroundColor: theme.colors.surface,
+    marginBottom: 16,
+  },
+  profileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   profileAvatar: {
     backgroundColor: theme.colors.primary,
-    marginBottom: spacing.md,
+    marginRight: 16,
+  },
+  profileInfo: {
+    flex: 1,
   },
   profileName: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: spacing.xs,
+    color: theme.colors.onSurface,
   },
   profileStatus: {
+    fontSize: 14,
     color: theme.colors.primary,
+    marginTop: 4,
   },
-  section: {
+  statsCard: {
     backgroundColor: theme.colors.surface,
-    marginTop: spacing.sm,
+    marginBottom: 16,
   },
   sectionTitle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    fontSize: 18,
     fontWeight: '600',
+    color: theme.colors.onSurface,
+    marginBottom: 16,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: theme.colors.primary,
   },
-  listItem: {
-    paddingHorizontal: spacing.md,
+  statLabel: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    marginTop: 4,
   },
-  listIcon: {
-    marginLeft: spacing.sm,
-    marginRight: spacing.md,
+  settingsCard: {
+    backgroundColor: theme.colors.surface,
+    marginBottom: 16,
+  },
+  listItem: {
+    paddingHorizontal: 0,
   },
   divider: {
-    height: 1,
     backgroundColor: theme.colors.outline,
+    marginVertical: 8,
+  },
+  actionsCard: {
+    backgroundColor: theme.colors.surface,
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    gap: 12,
+  },
+  actionButton: {
+    borderColor: theme.colors.primary,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  appInfo: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  appVersion: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.onSurfaceVariant,
+  },
+  appDescription: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    marginTop: 4,
   },
 });
-
-export default ProfileScreen;

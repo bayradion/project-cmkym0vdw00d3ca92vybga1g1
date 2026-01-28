@@ -1,63 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, IconButton, Text } from 'react-native-paper';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, IconButton } from 'react-native-paper';
 import { useRoute, RouteProp } from '@react-navigation/native';
-
 import { useChatStore } from '../store/chatStore';
 import MessageBubble from '../components/MessageBubble';
-import { theme, spacing } from '../constants/theme';
+import { theme } from '../constants/theme';
 import type { RootStackParamList, Message } from '../types';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
-const ChatScreen = () => {
+export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
-  const { contactId } = route.params;
+  const { contactId, contactName } = route.params;
   const [inputText, setInputText] = useState('');
-  const { getChatMessages, addMessage } = useChatStore();
-  const messages = getChatMessages(contactId);
+  const flatListRef = useRef<FlatList>(null);
+  
+  const { getChat, createChat, addMessage, contacts } = useChatStore();
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      addMessage(contactId, inputText.trim());
-      setInputText('');
+  const chat = getChat(contactId);
+  const contact = contacts.find(c => c.id === contactId);
+  
+  useEffect(() => {
+    if (!chat) {
+      createChat(contactId);
     }
+  }, [chat, contactId, createChat]);
+
+  useEffect(() => {
+    // Scroll to bottom when new messages arrive
+    if (chat?.messages.length) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [chat?.messages.length]);
+
+  const handleSendMessage = () => {
+    if (!inputText.trim()) return;
+
+    const chatId = chat?.id || createChat(contactId);
+    
+    addMessage(chatId, {
+      text: inputText.trim(),
+      isOwn: true,
+    });
+    
+    setInputText('');
+    
+    // Simulate a response after a short delay
+    setTimeout(() => {
+      const responses = [
+        "That's interesting!",
+        "I see what you mean.",
+        "Thanks for sharing!",
+        "Got it!",
+        "Cool!",
+        "Nice!",
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
+      addMessage(chatId, {
+        text: randomResponse,
+        isOwn: false,
+        contactId,
+      });
+    }, 1000 + Math.random() * 2000); // 1-3 second delay
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <MessageBubble message={item} />
-  );
+  const renderMessage = ({ item }: { item: Message }) => {
+    return (
+      <MessageBubble 
+        message={item} 
+        contactName={!item.isOwn ? contactName : undefined}
+      />
+    );
+  };
+
+  const messages = chat?.messages || [];
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.chatContainer}>
+      <View style={styles.messagesContainer}>
         <FlatList
+          ref={flatListRef}
           data={messages}
-          keyExtractor={(item) => item.id}
           renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
           style={styles.messagesList}
-          contentContainerStyle={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
-          inverted={false}
+          onContentSizeChange={() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }}
         />
       </View>
-
+      
       <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
           <TextInput
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Введите сообщение..."
+            placeholder="Type a message..."
             style={styles.textInput}
             multiline
             maxLength={1000}
             mode="outlined"
             outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            onSubmitEditing={handleSendMessage}
+            blurOnSubmit={false}
           />
-          <View style={styles.sendButtonContainer}>
+          <View style={styles.sendButtonWrapper}>
             <IconButton
               icon="send"
               size={24}
@@ -66,7 +123,7 @@ const ChatScreen = () => {
                 styles.sendButton,
                 { backgroundColor: inputText.trim() ? theme.colors.primary : theme.colors.onSurfaceVariant }
               ]}
-              onPress={handleSend}
+              onPress={handleSendMessage}
               disabled={!inputText.trim()}
             />
           </View>
@@ -74,27 +131,26 @@ const ChatScreen = () => {
       </View>
     </KeyboardAvoidingView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E5DDD5',
+    backgroundColor: theme.colors.background,
   },
-  chatContainer: {
+  messagesContainer: {
     flex: 1,
-    paddingHorizontal: spacing.sm,
   },
   messagesList: {
     flex: 1,
   },
-  messagesContainer: {
-    paddingVertical: spacing.md,
+  messagesContent: {
+    paddingVertical: 8,
   },
   inputContainer: {
     backgroundColor: theme.colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: theme.colors.outline,
   },
@@ -105,21 +161,24 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     maxHeight: 100,
-    backgroundColor: theme.colors.surface,
-    marginRight: spacing.sm,
+    backgroundColor: theme.colors.surfaceVariant,
+    marginRight: 8,
   },
   inputOutline: {
-    borderColor: theme.colors.outline,
-    borderWidth: 1,
+    borderColor: 'transparent',
+    borderRadius: 25,
   },
-  sendButtonContainer: {
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xs,
+  inputContent: {
+    paddingHorizontal: 16,
+  },
+  sendButtonWrapper: {
+    borderRadius: 25,
+    overflow: 'hidden',
   },
   sendButton: {
     margin: 0,
-    borderRadius: 24,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
   },
 });
-
-export default ChatScreen;
