@@ -1,92 +1,55 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, FlatList, StyleSheet, Pressable } from 'react-native';
-import { Text, Avatar, Divider } from 'react-native-paper';
+import React from 'react';
+import { View, FlatList, StyleSheet, Text, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useChatStore } from '../store/chatStore';
 import { theme } from '../constants/theme';
 import type { RootStackParamList, Contact } from '../types';
 
-type NavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+type ContactsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
-interface ContactItemProps {
-  item: Contact;
-  onPress: (contact: Contact) => void;
-}
+const ContactsScreen: React.FC = () => {
+  const navigation = useNavigation<ContactsScreenNavigationProp>();
+  const { contacts } = useChatStore();
 
-const ContactItem = React.memo<ContactItemProps>(({ item, onPress }) => {
-  const handlePress = useCallback(() => {
-    onPress(item);
-  }, [item, onPress]);
+  const startChat = (contact: Contact) => {
+    navigation.navigate('Chat', {
+      contactId: contact.id,
+      contactName: contact.name,
+    });
+  };
 
-  const avatarStyle = useMemo(() => [styles.avatar], []);
-
-  return (
-    <View>
-      <View style={styles.contactWrapper}>
+  const renderContactItem = ({ item }: { item: Contact }) => {
+    return (
+      <View style={styles.contactItemWrapper}>
         <Pressable
           style={styles.contactItem}
-          onPress={handlePress}
+          onPress={() => startChat(item)}
         >
-          <Avatar.Text
-            size={50}
-            label={item.avatar || item.name.charAt(0)}
-            style={avatarStyle}
-          />
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatar}>{item.avatar}</Text>
+            {item.isOnline && <View style={styles.onlineIndicator} />}
+          </View>
+          
           <View style={styles.contactInfo}>
             <Text style={styles.contactName}>{item.name}</Text>
             <Text style={styles.lastSeen}>
               {item.isOnline ? 'Online' : `Last seen ${item.lastSeen}`}
             </Text>
           </View>
-          {item.isOnline && <View style={styles.onlineIndicator} />}
         </Pressable>
       </View>
-      <Divider />
-    </View>
-  );
-});
-
-ContactItem.displayName = 'ContactItem';
-
-const ContactsScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { contacts } = useChatStore();
-
-  const handleContactPress = useCallback((contact: Contact) => {
-    navigation.navigate('Chat', {
-      contactId: contact.id,
-      contactName: contact.name,
-    });
-  }, [navigation]);
-
-  const renderContact = useCallback(({ item }: { item: Contact }) => {
-    return (
-      <ContactItem
-        item={item}
-        onPress={handleContactPress}
-      />
     );
-  }, [handleContactPress]);
-
-  const keyExtractor = useCallback((item: Contact) => item.id, []);
+  };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={contacts}
-        renderItem={renderContact}
-        keyExtractor={keyExtractor}
+        renderItem={renderContactItem}
+        keyExtractor={(item) => item.id}
+        style={styles.contactsList}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        initialNumToRender={10}
-        getItemLayout={(data, index) => ({
-          length: 80,
-          offset: 80 * index,
-          index,
-        })}
       />
     </View>
   );
@@ -97,21 +60,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  contactWrapper: {
+  contactsList: {
+    flex: 1,
+  },
+  contactItemWrapper: {
     backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.outline,
   },
   contactItem: {
     flexDirection: 'row',
-    padding: 16,
     alignItems: 'center',
-    height: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 12,
   },
   avatar: {
+    fontSize: 32,
+    width: 50,
+    height: 50,
+    textAlign: 'center',
+    lineHeight: 50,
+    backgroundColor: theme.colors.primaryContainer,
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.surface,
   },
   contactInfo: {
     flex: 1,
-    marginLeft: 16,
   },
   contactName: {
     fontSize: 16,
@@ -123,12 +112,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.onSurfaceVariant,
   },
-  onlineIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: theme.colors.primary,
-  },
 });
 
-export default React.memo(ContactsScreen);
+export default ContactsScreen;

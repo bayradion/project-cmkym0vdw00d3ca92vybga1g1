@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, IconButton } from 'react-native-paper';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useIsFocused } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { useChatStore } from '../store/chatStore';
 import MessageBubble from '../components/MessageBubble';
@@ -12,60 +12,66 @@ type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
 const ChatScreen: React.FC = () => {
   const route = useRoute<ChatScreenRouteProp>();
+  const isFocused = useIsFocused();
   const { contactId } = route.params;
   const [inputText, setInputText] = useState('');
-  const flatListRef = useRef<FlatList<Message>>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const responseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { getMessagesByContactId, addMessage } = useChatStore();
-  const messages = useMemo(() => getMessagesByContactId(contactId), [contactId, getMessagesByContactId]);
+  const messages = getMessagesByContactId(contactId);
 
-  const handleSend = useCallback(() => {
-    if (inputText.trim()) {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSend = () => {
+    if (inputText.trim() && isFocused) {
       addMessage(contactId, inputText.trim(), true);
       setInputText('');
       
+      // Clear any existing timeout
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
+      
       // Simulate response after 1-2 seconds
-      const timeoutId = setTimeout(() => {
-        const responses = [
-          'Got it!',
-          'Thanks for letting me know',
-          'Sounds good',
-          'Sure thing!',
-          'I understand',
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        addMessage(contactId, randomResponse, false);
+      responseTimeoutRef.current = setTimeout(() => {
+        // Check if component is still focused before adding response
+        if (isFocused) {
+          const responses = [
+            'Got it!',
+            'Thanks for letting me know',
+            'Sounds good',
+            'Sure thing!',
+            'I understand',
+          ];
+          const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+          addMessage(contactId, randomResponse, false);
+        }
+        responseTimeoutRef.current = null;
       }, 1000 + Math.random() * 1000);
-
-      return () => clearTimeout(timeoutId);
     }
-  }, [contactId, inputText, addMessage]);
+  };
 
-  const renderMessage = useCallback(({ item }: { item: Message }) => {
-    return <MessageBubble message={item} />;
-  }, []);
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+    return <MessageBubble key={`${item.id}-${index}`} message={item} />;
+  };
 
-  const keyExtractor = useCallback((item: Message) => item.id, []);
+  const getItemLayout = (data: Message[] | null | undefined, index: number) => ({
+    length: 80, // Approximate height of each message
+    offset: 80 * index,
+    index,
+  });
 
-  const isDisabled = useMemo(() => !inputText.trim(), [inputText]);
-
-  const scrollToEnd = useCallback(() => {
-    if (flatListRef.current && messages.length > 0) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  }, [messages.length]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToEnd();
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [scrollToEnd, messages.length]);
-
-  const inputContentStyle = useMemo(() => [styles.inputContent], []);
-  const sendButtonStyle = useMemo(() => [styles.sendButton], []);
-  const sendButtonWrapperStyle = useMemo(() => [styles.sendButtonWrapper], []);
+  if (!isFocused) {
+    return null;
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -76,15 +82,14 @@ const ChatScreen: React.FC = () => {
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={keyExtractor}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         style={styles.messagesList}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={20}
+        removeClippedSubviews={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
         windowSize={10}
-        initialNumToRender={15}
-        onContentSizeChange={scrollToEnd}
-        onLayout={scrollToEnd}
+        getItemLayout={getItemLayout}
       />
       
       <View style={styles.inputContainer}>
@@ -98,16 +103,16 @@ const ChatScreen: React.FC = () => {
             mode="outlined"
             outlineColor="transparent"
             activeOutlineColor="transparent"
-            contentStyle={inputContentStyle}
+            contentStyle={styles.inputContent}
           />
-          <View style={sendButtonWrapperStyle}>
+          <View style={styles.sendButtonWrapper}>
             <IconButton
               icon="send"
               size={24}
               iconColor={theme.colors.onPrimary}
-              style={sendButtonStyle}
+              style={styles.sendButton}
               onPress={handleSend}
-              disabled={isDisabled}
+              disabled={!inputText.trim()}
             />
           </View>
         </View>
@@ -161,4 +166,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(ChatScreen);
+export default ChatScreen;
