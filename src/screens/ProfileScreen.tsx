@@ -101,7 +101,6 @@ export default function ProfileScreen() {
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
               style={styles.listItem}
               onPress={() => {
-                // Handle privacy settings
                 console.log('Privacy settings pressed');
               }}
             />
@@ -115,7 +114,6 @@ export default function ProfileScreen() {
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
               style={styles.listItem}
               onPress={() => {
-                // Handle storage settings
                 console.log('Storage settings pressed');
               }}
             />
@@ -128,29 +126,33 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Account</Text>
             
             <View style={styles.buttonContainer}>
-              <Button
-                mode="outlined"
-                icon="account-edit"
-                style={styles.actionButton}
-                contentStyle={styles.buttonContent}
-                onPress={() => {
-                  console.log('Edit profile pressed');
-                }}
-              >
-                Edit Profile
-              </Button>
+              <View style={styles.buttonWrapper}>
+                <Button
+                  mode="outlined"
+                  icon="account-edit"
+                  style={styles.actionButton}
+                  contentStyle={styles.buttonContent}
+                  onPress={() => {
+                    console.log('Edit profile pressed');
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              </View>
               
-              <Button
-                mode="outlined"
-                icon="backup-restore"
-                style={styles.actionButton}
-                contentStyle={styles.buttonContent}
-                onPress={() => {
-                  console.log('Backup & Restore pressed');
-                }}
-              >
-                Backup & Restore
-              </Button>
+              <View style={styles.buttonWrapper}>
+                <Button
+                  mode="outlined"
+                  icon="backup-restore"
+                  style={styles.actionButton}
+                  contentStyle={styles.buttonContent}
+                  onPress={() => {
+                    console.log('Backup & Restore pressed');
+                  }}
+                >
+                  Backup & Restore
+                </Button>
+              </View>
             </View>
           </Card.Content>
         </Card>
@@ -257,6 +259,10 @@ const styles = StyleSheet.create({
   buttonContainer: {
     gap: 12,
   },
+  buttonWrapper: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   actionButton: {
     borderColor: theme.colors.primary,
   },
@@ -270,7 +276,7 @@ const styles = StyleSheet.create({
   appVersion: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.onSurfaceVariant,
+    color: theme.colors.onSurface,
   },
   appDescription: {
     fontSize: 14,
