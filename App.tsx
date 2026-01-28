@@ -74,6 +74,8 @@ const App: React.FC = () => {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
+            gestureEnabled: true,
+            animationEnabled: true,
           }}
         >
           <Stack.Screen
