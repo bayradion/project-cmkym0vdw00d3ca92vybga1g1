@@ -1,85 +1,89 @@
-import React from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  Text,
-  Pressable,
-} from 'react-native';
-import { Card, Avatar, Title, Caption } from 'react-native-paper';
+import React, { useCallback } from 'react';
+import { View, FlatList, StyleSheet, Text, ListRenderItem } from 'react-native';
+import { Surface, Avatar, Divider, Pressable } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChatStore } from '../store/chatStore';
 import { theme } from '../constants/theme';
-import type { RootStackParamList, Contact } from '../types';
-
-type ContactsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-interface ContactItemProps {
-  contact: Contact;
-  onPress: () => void;
-}
-
-const ContactItem: React.FC<ContactItemProps> = ({ contact, onPress }) => {
-  return (
-    <View style={styles.cardWrapper}>
-      <Pressable onPress={onPress} style={styles.pressable}>
-        <Card style={styles.card}>
-          <Card.Content style={styles.cardContent}>
-            <View style={styles.avatarContainer}>
-              <Avatar.Text 
-                size={50} 
-                label={contact.avatar} 
-                style={styles.avatar}
-              />
-              {contact.isOnline && <View style={styles.onlineIndicator} />}
-            </View>
-            <View style={styles.contentContainer}>
-              <Title style={styles.contactName}>{contact.name}</Title>
-              <Caption style={styles.lastSeen}>
-                {contact.isOnline ? 'Online' : `Last seen ${contact.lastSeen}`}
-              </Caption>
-            </View>
-          </Card.Content>
-        </Card>
-      </Pressable>
-    </View>
-  );
-};
+import type { Contact, ContactsScreenNavigationProp } from '../types';
 
 const ContactsScreen: React.FC = () => {
   const navigation = useNavigation<ContactsScreenNavigationProp>();
-  const { contacts } = useChatStore();
+  const { contacts, createOrGetChat } = useChatStore();
 
-  const handleContactPress = (contact: Contact) => {
+  const handleContactPress = useCallback((contact: Contact) => {
+    createOrGetChat(contact.id);
     navigation.navigate('Chat', {
       contactId: contact.id,
       contactName: contact.name,
     });
-  };
+  }, [navigation, createOrGetChat]);
 
-  const renderContactItem = ({ item }: { item: Contact }) => (
-    <ContactItem
-      contact={item}
-      onPress={() => handleContactPress(item)}
-    />
-  );
+  const renderContactItem: ListRenderItem<Contact> = useCallback(({ item }) => (
+    <View key={`contact-wrapper-${item.id}`}>
+      <Surface style={styles.contactItem} elevation={0}>
+        <Pressable
+          style={styles.contactPressable}
+          onPress={() => handleContactPress(item)}
+          android_ripple={{ color: theme.colors.primary, borderless: false }}
+        >
+          <Avatar.Text 
+            size={50} 
+            label={item.name.charAt(0).toUpperCase()}
+            style={styles.avatar}
+          />
+          <View style={styles.contactContent}>
+            <Text style={styles.contactName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.contactPhone} numberOfLines={1}>
+              {item.phone}
+            </Text>
+            {item.status && (
+              <Text style={styles.contactStatus} numberOfLines={2}>
+                {item.status}
+              </Text>
+            )}
+          </View>
+        </Pressable>
+      </Surface>
+      <Divider />
+    </View>
+  ), [handleContactPress]);
+
+  const keyExtractor = useCallback((item: Contact) => `contact-${item.id}`, []);
+
+  const getItemLayout = useCallback((data: Contact[] | null | undefined, index: number) => ({
+    length: 72,
+    offset: 72 * index,
+    index,
+  }), []);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Title style={styles.headerTitle}>Contacts</Title>
-        <Caption style={styles.contactCount}>{contacts.length} contacts</Caption>
+        <Text style={styles.title}>Contacts</Text>
       </View>
-      
-      <FlatList
-        data={contacts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderContactItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+      {contacts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No contacts</Text>
+          <Text style={styles.emptySubtext}>Your contacts will appear here</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={contacts}
+          renderItem={renderContactItem}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
+          style={styles.contactList}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+        />
+      )}
+    </SafeAreaView>
   );
 };
 
@@ -90,74 +94,64 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.outline,
+    backgroundColor: theme.colors.primary,
   },
-  headerTitle: {
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: theme.colors.onSurface,
-    marginBottom: 4,
+    color: theme.colors.onPrimary,
   },
-  contactCount: {
-    fontSize: 14,
-    color: theme.colors.onSurfaceVariant,
+  contactList: {
+    flex: 1,
   },
-  listContent: {
-    padding: 16,
-  },
-  cardWrapper: {
-    marginBottom: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  pressable: {
-    borderRadius: 12,
-  },
-  card: {
+  contactItem: {
     backgroundColor: theme.colors.surface,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginHorizontal: 0,
   },
-  cardContent: {
+  contactPressable: {
     flexDirection: 'row',
+    padding: 16,
     alignItems: 'center',
-    paddingVertical: 12,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 16,
   },
   avatar: {
-    backgroundColor: theme.colors.primaryContainer,
+    backgroundColor: theme.colors.primary,
+    marginRight: 12,
   },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-  },
-  contentContainer: {
+  contactContent: {
     flex: 1,
   },
   contactName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: theme.colors.onSurface,
     marginBottom: 2,
   },
-  lastSeen: {
+  contactPhone: {
     fontSize: 14,
     color: theme.colors.onSurfaceVariant,
+    marginBottom: 2,
+  },
+  contactStatus: {
+    fontSize: 12,
+    color: theme.colors.onSurfaceVariant,
+    fontStyle: 'italic',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    textAlign: 'center',
   },
 });
 

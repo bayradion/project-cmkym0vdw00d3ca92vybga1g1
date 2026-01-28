@@ -27,8 +27,6 @@ const TabNavigator: React.FC = () => {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.outline,
         },
-        lazy: true,
-        unmountOnBlur: false,
       }}
     >
       <Tab.Screen
@@ -76,8 +74,6 @@ const App: React.FC = () => {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
-            gestureEnabled: true,
-            animationEnabled: true,
           }}
         >
           <Stack.Screen

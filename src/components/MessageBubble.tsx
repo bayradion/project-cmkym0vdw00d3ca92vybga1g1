@@ -1,88 +1,99 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Surface } from 'react-native-paper';
 import { theme } from '../constants/theme';
 import type { Message } from '../types';
 
 interface MessageBubbleProps {
   message: Message;
+  showAvatar?: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const isOwn = message.isOwn;
-
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ 
+  message, 
+  showAvatar = true 
+}) => {
+  const isFromMe = message.isFromMe;
+  
   return (
-    <View style={[styles.container, isOwn ? styles.ownContainer : styles.otherContainer]}>
-      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble]}>
-        <Text style={[styles.messageText, isOwn ? styles.ownText : styles.otherText]}>
+    <View style={[
+      styles.container,
+      isFromMe ? styles.containerFromMe : styles.containerFromOther
+    ]}>
+      <Surface
+        style={[
+          styles.bubble,
+          isFromMe ? styles.bubbleFromMe : styles.bubbleFromOther
+        ]}
+        elevation={1}
+      >
+        <Text style={[
+          styles.messageText,
+          isFromMe ? styles.messageTextFromMe : styles.messageTextFromOther
+        ]}>
           {message.text}
         </Text>
-        <Text style={[styles.timestamp, isOwn ? styles.ownTimestamp : styles.otherTimestamp]}>
-          {message.timestamp.toLocaleTimeString([], {
+        <Text style={[
+          styles.timestamp,
+          isFromMe ? styles.timestampFromMe : styles.timestampFromOther
+        ]}>
+          {new Date(message.timestamp).toLocaleTimeString('en-US', {
             hour: '2-digit',
-            minute: '2-digit',
+            minute: '2-digit'
           })}
         </Text>
-      </View>
+      </Surface>
     </View>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';
 
 const styles = StyleSheet.create({
   container: {
     marginVertical: 2,
-    paddingHorizontal: 4,
+    marginHorizontal: 16,
   },
-  ownContainer: {
+  containerFromMe: {
     alignItems: 'flex-end',
   },
-  otherContainer: {
+  containerFromOther: {
     alignItems: 'flex-start',
   },
   bubble: {
     maxWidth: '80%',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 18,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    padding: 12,
+    borderRadius: 16,
   },
-  ownBubble: {
+  bubbleFromMe: {
     backgroundColor: theme.colors.primary,
     borderBottomRightRadius: 4,
   },
-  otherBubble: {
-    backgroundColor: theme.colors.surface,
+  bubbleFromOther: {
+    backgroundColor: theme.colors.surfaceVariant,
     borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.outline,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 20,
     marginBottom: 4,
   },
-  ownText: {
+  messageTextFromMe: {
     color: theme.colors.onPrimary,
   },
-  otherText: {
-    color: theme.colors.onSurface,
+  messageTextFromOther: {
+    color: theme.colors.onSurfaceVariant,
   },
   timestamp: {
     fontSize: 12,
     alignSelf: 'flex-end',
   },
-  ownTimestamp: {
+  timestampFromMe: {
     color: theme.colors.onPrimary,
     opacity: 0.7,
   },
-  otherTimestamp: {
+  timestampFromOther: {
     color: theme.colors.onSurfaceVariant,
+    opacity: 0.7,
   },
 });

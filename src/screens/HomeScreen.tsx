@@ -1,94 +1,101 @@
-import React from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  Text,
-  Pressable,
-} from 'react-native';
-import { Card, Avatar, Title, Caption } from 'react-native-paper';
+import React, { useCallback } from 'react';
+import { View, FlatList, StyleSheet, Text, ListRenderItem } from 'react-native';
+import { Surface, Avatar, Divider, Pressable } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChatStore } from '../store/chatStore';
 import { theme } from '../constants/theme';
-import type { RootStackParamList, Contact } from '../types';
-
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-interface ChatListItemProps {
-  contact: Contact;
-  onPress: () => void;
-}
-
-const ChatListItem: React.FC<ChatListItemProps> = ({ contact, onPress }) => {
-  const { getMessagesByContactId } = useChatStore();
-  const messages = getMessagesByContactId(contact.id);
-  const lastMessage = messages[messages.length - 1];
-
-  return (
-    <View style={styles.cardWrapper}>
-      <Pressable onPress={onPress} style={styles.pressable}>
-        <Card style={styles.card}>
-          <Card.Content style={styles.cardContent}>
-            <View style={styles.avatarContainer}>
-              <Avatar.Text 
-                size={50} 
-                label={contact.avatar} 
-                style={styles.avatar}
-              />
-              {contact.isOnline && <View style={styles.onlineIndicator} />}
-            </View>
-            <View style={styles.contentContainer}>
-              <View style={styles.header}>
-                <Title style={styles.contactName}>{contact.name}</Title>
-                {lastMessage && (
-                  <Caption style={styles.timestamp}>
-                    {lastMessage.timestamp.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Caption>
-                )}
-              </View>
-              <Caption style={styles.lastMessage}>
-                {lastMessage ? lastMessage.text : 'No messages yet'}
-              </Caption>
-            </View>
-          </Card.Content>
-        </Card>
-      </Pressable>
-    </View>
-  );
-};
+import type { Chat, HomeScreenNavigationProp } from '../types';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { contacts } = useChatStore();
+  const { chats, contacts } = useChatStore();
 
-  const handleContactPress = (contact: Contact) => {
+  const handleChatPress = useCallback((chat: Chat) => {
+    const contact = contacts.find(c => c.id === chat.contactId);
     navigation.navigate('Chat', {
-      contactId: contact.id,
-      contactName: contact.name,
+      contactId: chat.contactId,
+      contactName: contact?.name || 'Unknown',
     });
-  };
+  }, [navigation, contacts]);
 
-  const renderChatItem = ({ item }: { item: Contact }) => (
-    <ChatListItem
-      contact={item}
-      onPress={() => handleContactPress(item)}
-    />
-  );
+  const renderChatItem: ListRenderItem<Chat> = useCallback(({ item }) => {
+    const contact = contacts.find(c => c.id === item.contactId);
+    const lastMessage = item.messages[item.messages.length - 1];
+
+    if (!contact) {
+      return null;
+    }
+
+    return (
+      <View key={`chat-wrapper-${item.id}`}>
+        <Surface style={styles.chatItem} elevation={0}>
+          <Pressable
+            style={styles.chatPressable}
+            onPress={() => handleChatPress(item)}
+            android_ripple={{ color: theme.colors.primary, borderless: false }}
+          >
+            <Avatar.Text 
+              size={50} 
+              label={contact.name.charAt(0).toUpperCase()}
+              style={styles.avatar}
+            />
+            <View style={styles.chatContent}>
+              <View style={styles.chatHeader}>
+                <Text style={styles.contactName} numberOfLines={1}>
+                  {contact.name}
+                </Text>
+                <Text style={styles.timestamp}>
+                  {lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : ''}
+                </Text>
+              </View>
+              <Text style={styles.lastMessage} numberOfLines={2}>
+                {lastMessage?.text || 'No messages'}
+              </Text>
+            </View>
+          </Pressable>
+        </Surface>
+        <Divider />
+      </View>
+    );
+  }, [contacts, handleChatPress]);
+
+  const keyExtractor = useCallback((item: Chat) => `chat-${item.id}`, []);
+
+  const getItemLayout = useCallback((data: Chat[] | null | undefined, index: number) => ({
+    length: 72,
+    offset: 72 * index,
+    index,
+  }), []);
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={contacts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderChatItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Chats</Text>
+      </View>
+      {chats.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No chats yet</Text>
+          <Text style={styles.emptySubtext}>Start a conversation from Contacts</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={chats}
+          renderItem={renderChatItem}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
+          style={styles.chatList}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+        />
+      )}
+    </SafeAreaView>
   );
 };
 
@@ -97,52 +104,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  listContent: {
+  header: {
     padding: 16,
+    backgroundColor: theme.colors.primary,
   },
-  cardWrapper: {
-    marginBottom: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.onPrimary,
   },
-  pressable: {
-    borderRadius: 12,
-  },
-  card: {
-    backgroundColor: theme.colors.surface,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 16,
-  },
-  avatar: {
-    backgroundColor: theme.colors.primaryContainer,
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-  },
-  contentContainer: {
+  chatList: {
     flex: 1,
   },
-  header: {
+  chatItem: {
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 0,
+  },
+  chatPressable: {
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+  },
+  avatar: {
+    backgroundColor: theme.colors.primary,
+    marginRight: 12,
+  },
+  chatContent: {
+    flex: 1,
+  },
+  chatHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -150,17 +140,35 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: theme.colors.onSurface,
+    flex: 1,
   },
   timestamp: {
     fontSize: 12,
     color: theme.colors.onSurfaceVariant,
+    marginLeft: 8,
   },
   lastMessage: {
     fontSize: 14,
     color: theme.colors.onSurfaceVariant,
-    numberOfLines: 1,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+    textAlign: 'center',
   },
 });
 
