@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Avatar, Card, List, Switch } from 'react-native-paper';
 import { theme } from '../constants/theme';
 
 const ProfileScreen: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
   return (
     <ScrollView style={styles.container}>
