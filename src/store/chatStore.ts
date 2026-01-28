@@ -66,7 +66,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   addMessage: (contactId: string, text: string, isOwn: boolean) => {
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random()}`,
       text,
       timestamp: new Date(),
       isOwn,
@@ -98,6 +98,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   getMessagesByContactId: (contactId: string) => {
     const state = get();
-    return state.messages.filter(message => message.contactId === contactId);
+    return state.messages
+      .filter(message => message.contactId === contactId)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   },
 }));

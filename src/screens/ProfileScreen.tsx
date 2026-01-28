@@ -1,219 +1,101 @@
 import React from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   ScrollView,
+  Pressable,
 } from 'react-native';
-import {
-  Card,
-  Avatar,
-  Title,
-  Caption,
-  List,
-  Divider,
-  Switch,
-  Button,
-} from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 
-const ProfileScreen: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
+interface ProfileOptionProps {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+}
 
+const ProfileOption: React.FC<ProfileOptionProps> = ({ icon, title, subtitle, onPress }) => {
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.optionWrapper}>
+      <Pressable style={styles.option} onPress={onPress}>
+        <MaterialIcons name={icon as any} size={24} color={theme.colors.onSurfaceVariant} />
+        <View style={styles.optionContent}>
+          <Text style={styles.optionTitle}>{title}</Text>
+          {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
+        </View>
+        <MaterialIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+      </Pressable>
+    </View>
+  );
+};
+
+const ProfileScreen: React.FC = () => {
+  return (
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Avatar.Text 
-          size={80} 
-          label="👤" 
-          style={styles.avatar}
-        />
-        <Title style={styles.userName}>You</Title>
-        <Caption style={styles.userStatus}>Available</Caption>
+        <Text style={styles.headerTitle}>Profile</Text>
       </View>
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>😊</Text>
+          </View>
+          <Text style={styles.userName}>You</Text>
+          <Text style={styles.userStatus}>Hey there! I am using WhatsApp.</Text>
+        </View>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title style={styles.sectionTitle}>Account</Title>
-          <List.Item
-            title="Phone"
-            description="+1 234 567 8900"
-            left={(props) => (
-              <MaterialIcons
-                name="phone"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
+        <View style={styles.section}>
+          <ProfileOption
+            icon="account-circle"
+            title="Name"
+            subtitle="You"
           />
-          <List.Item
-            title="Username"
-            description="@myusername"
-            left={(props) => (
-              <MaterialIcons
-                name="alternate-email"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-          />
-          <List.Item
-            title="Bio"
-            description="Hey there! I am using WhatsApp."
-            left={(props) => (
-              <MaterialIcons
-                name="info"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-          />
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title style={styles.sectionTitle}>Settings</Title>
-          <List.Item
-            title="Notifications"
-            description="Enable push notifications"
-            left={(props) => (
-              <MaterialIcons
-                name="notifications"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={() => (
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-              />
-            )}
-          />
-          <List.Item
-            title="Dark Mode"
-            description="Enable dark theme"
-            left={(props) => (
-              <MaterialIcons
-                name="dark-mode"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={() => (
-              <Switch
-                value={darkModeEnabled}
-                onValueChange={setDarkModeEnabled}
-              />
-            )}
-          />
-          <List.Item
-            title="Privacy"
-            description="Manage your privacy settings"
-            left={(props) => (
-              <MaterialIcons
-                name="privacy-tip"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={(props) => (
-              <MaterialIcons
-                name="chevron-right"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-          />
-          <List.Item
-            title="Security"
-            description="Two-step verification, change number"
-            left={(props) => (
-              <MaterialIcons
-                name="security"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={(props) => (
-              <MaterialIcons
-                name="chevron-right"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-          />
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title style={styles.sectionTitle}>Support</Title>
-          <List.Item
-            title="Help"
-            description="Help center, contact support"
-            left={(props) => (
-              <MaterialIcons
-                name="help"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={(props) => (
-              <MaterialIcons
-                name="chevron-right"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-          />
-          <List.Item
+          <ProfileOption
+            icon="info"
             title="About"
-            description="App version, terms of service"
-            left={(props) => (
-              <MaterialIcons
-                name="info-outline"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
-            right={(props) => (
-              <MaterialIcons
-                name="chevron-right"
-                size={24}
-                color={theme.colors.onSurfaceVariant}
-                style={props.style}
-              />
-            )}
+            subtitle="Hey there! I am using WhatsApp."
           />
-        </Card.Content>
-      </Card>
+          <ProfileOption
+            icon="phone"
+            title="Phone"
+            subtitle="+1 (555) 123-4567"
+          />
+        </View>
 
-      <View style={styles.footer}>
-        <Button
-          mode="outlined"
-          onPress={() => console.log('Logout pressed')}
-          style={styles.logoutButton}
-          labelStyle={styles.logoutButtonText}
-        >
-          Logout
-        </Button>
-      </View>
-    </ScrollView>
+        <View style={styles.section}>
+          <ProfileOption
+            icon="notifications"
+            title="Notifications"
+          />
+          <ProfileOption
+            icon="lock"
+            title="Privacy"
+          />
+          <ProfileOption
+            icon="security"
+            title="Security"
+          />
+          <ProfileOption
+            icon="data-usage"
+            title="Storage and data"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <ProfileOption
+            icon="help"
+            title="Help"
+          />
+          <ProfileOption
+            icon="feedback"
+            title="Tell a friend"
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -223,49 +105,73 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.primary,
+    padding: 16,
+    paddingTop: 50,
   },
-  avatar: {
-    backgroundColor: theme.colors.primaryContainer,
-    marginBottom: 12,
-  },
-  userName: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: theme.colors.onPrimary,
+  },
+  content: {
+    flex: 1,
+  },
+  profileSection: {
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    paddingVertical: 32,
+    marginBottom: 8,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarText: {
+    fontSize: 40,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: theme.colors.onSurface,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   userStatus: {
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.onSurfaceVariant,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
-  card: {
-    margin: 16,
-    marginBottom: 8,
+  section: {
     backgroundColor: theme.colors.surface,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.primary,
     marginBottom: 8,
   },
-  footer: {
-    padding: 24,
-    paddingBottom: 32,
+  optionWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.outline,
   },
-  logoutButton: {
-    borderColor: '#F44336',
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
   },
-  logoutButtonText: {
-    color: '#F44336',
+  optionContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  optionTitle: {
+    fontSize: 16,
+    color: theme.colors.onSurface,
+    marginBottom: 2,
+  },
+  optionSubtitle: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
   },
 });
 

@@ -1,101 +1,99 @@
-import React, { useCallback } from 'react';
-import { View, FlatList, StyleSheet, Text, ListRenderItem } from 'react-native';
-import { Surface, Avatar, Divider, Pressable } from 'react-native-paper';
+import React from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useChatStore } from '../store/chatStore';
 import { theme } from '../constants/theme';
-import type { Chat, HomeScreenNavigationProp } from '../types';
+import type { RootStackParamList, Contact } from '../types';
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+
+interface ChatItemProps {
+  contact: Contact;
+  onPress: () => void;
+}
+
+const ChatItem: React.FC<ChatItemProps> = ({ contact, onPress }) => {
+  const { getChatByContactId } = useChatStore();
+  const chat = getChatByContactId(contact.id);
+  const lastMessage = chat?.lastMessage;
+
+  return (
+    <View style={styles.chatItemWrapper}>
+      <Pressable style={styles.chatItem} onPress={onPress}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{contact.avatar}</Text>
+        </View>
+        <View style={styles.chatInfo}>
+          <View style={styles.chatHeader}>
+            <Text style={styles.contactName}>{contact.name}</Text>
+            <Text style={styles.timestamp}>
+              {lastMessage ? formatTime(lastMessage.timestamp) : ''}
+            </Text>
+          </View>
+          <View style={styles.chatPreview}>
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {lastMessage ? lastMessage.text : 'No messages yet'}
+            </Text>
+            {contact.isOnline && <View style={styles.onlineIndicator} />}
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  );
+};
+
+const formatTime = (timestamp: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - timestamp.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  
+  if (hours < 1) {
+    const minutes = Math.floor(diff / (1000 * 60));
+    return `${minutes}m`;
+  } else if (hours < 24) {
+    return `${hours}h`;
+  } else {
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
+  }
+};
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { chats, contacts } = useChatStore();
+  const { contacts } = useChatStore();
 
-  const handleChatPress = useCallback((chat: Chat) => {
-    const contact = contacts.find(c => c.id === chat.contactId);
+  const handleChatPress = (contact: Contact) => {
     navigation.navigate('Chat', {
-      contactId: chat.contactId,
-      contactName: contact?.name || 'Unknown',
+      contactId: contact.id,
+      contactName: contact.name,
     });
-  }, [navigation, contacts]);
-
-  const renderChatItem: ListRenderItem<Chat> = useCallback(({ item }) => {
-    const contact = contacts.find(c => c.id === item.contactId);
-    const lastMessage = item.messages[item.messages.length - 1];
-
-    if (!contact) {
-      return null;
-    }
-
-    return (
-      <View key={`chat-wrapper-${item.id}`}>
-        <Surface style={styles.chatItem} elevation={0}>
-          <Pressable
-            style={styles.chatPressable}
-            onPress={() => handleChatPress(item)}
-            android_ripple={{ color: theme.colors.primary, borderless: false }}
-          >
-            <Avatar.Text 
-              size={50} 
-              label={contact.name.charAt(0).toUpperCase()}
-              style={styles.avatar}
-            />
-            <View style={styles.chatContent}>
-              <View style={styles.chatHeader}>
-                <Text style={styles.contactName} numberOfLines={1}>
-                  {contact.name}
-                </Text>
-                <Text style={styles.timestamp}>
-                  {lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : ''}
-                </Text>
-              </View>
-              <Text style={styles.lastMessage} numberOfLines={2}>
-                {lastMessage?.text || 'No messages'}
-              </Text>
-            </View>
-          </Pressable>
-        </Surface>
-        <Divider />
-      </View>
-    );
-  }, [contacts, handleChatPress]);
-
-  const keyExtractor = useCallback((item: Chat) => `chat-${item.id}`, []);
-
-  const getItemLayout = useCallback((data: Chat[] | null | undefined, index: number) => ({
-    length: 72,
-    offset: 72 * index,
-    index,
-  }), []);
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Chats</Text>
+        <Text style={styles.headerTitle}>Chats</Text>
       </View>
-      {chats.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No chats yet</Text>
-          <Text style={styles.emptySubtext}>Start a conversation from Contacts</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={chats}
-          renderItem={renderChatItem}
-          keyExtractor={keyExtractor}
-          getItemLayout={getItemLayout}
-          style={styles.chatList}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={10}
-        />
-      )}
-    </SafeAreaView>
+      <FlatList
+        data={contacts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ChatItem
+            contact={item}
+            onPress={() => handleChatPress(item)}
+          />
+        )}
+        style={styles.chatList}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
@@ -105,10 +103,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 16,
     backgroundColor: theme.colors.primary,
+    padding: 16,
+    paddingTop: 50,
   },
-  title: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.onPrimary,
@@ -116,20 +115,29 @@ const styles = StyleSheet.create({
   chatList: {
     flex: 1,
   },
-  chatItem: {
+  chatItemWrapper: {
     backgroundColor: theme.colors.surface,
-    marginHorizontal: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.outline,
   },
-  chatPressable: {
+  chatItem: {
     flexDirection: 'row',
     padding: 16,
     alignItems: 'center',
   },
   avatar: {
-    backgroundColor: theme.colors.primary,
-    marginRight: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: theme.colors.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  chatContent: {
+  avatarText: {
+    fontSize: 20,
+  },
+  chatInfo: {
     flex: 1,
   },
   chatHeader: {
@@ -140,35 +148,29 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: theme.colors.onSurface,
-    flex: 1,
   },
   timestamp: {
     fontSize: 12,
     color: theme.colors.onSurfaceVariant,
-    marginLeft: 8,
+  },
+  chatPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   lastMessage: {
     fontSize: 14,
     color: theme.colors.onSurfaceVariant,
-  },
-  emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.onSurfaceVariant,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: theme.colors.onSurfaceVariant,
-    textAlign: 'center',
+  onlineIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.primary,
+    marginLeft: 8,
   },
 });
 
